@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+# Bootstraps the current directory as a Basic Memory vault: registers it as
+# an isolated BM project, installs the note-writing skill, and starts
+# background services (mcpo bridge, and - if the folder is git-tracked -
+# a commit watcher and push timer) via launchd.
+#
+# Usage: cd into the folder you want to become a vault (fresh, or already
+# git-tracked, or nested inside another repo - all supported), then:
+#
+#   gh api -H "Accept: application/vnd.github.raw" \
+#     /repos/ivan-avramov/memvault-infra/contents/install.sh \
+#     | bash -s -- personal-vault
+#
+# `gh api` (not curl) so this works against a private memvault-infra repo too,
+# riding your existing `gh auth login` session.
+#
+# The vault name is used as: the Basic Memory project name, the isolated
+# config dir under ~/.memvault-infra/config/<name>/, and the launchd service
+# label suffix. Run it once per vault (work vault, personal vault - each in
+# its own directory) - every vault gets its own fully isolated BM config dir
+# and its own mcpo/port, so a client attached to one vault's mcpo port cannot
+# see the other vault's projects at all.
+set -euo pipefail
+
+REPO_SLUG="${MEMVAULT_INFRA_REPO:-ivan-avramov/memvault-infra}"
+INFRA_HOME="$HOME/.memvault-infra"
+INFRA_DIR="$INFRA_HOME/repo"
+
+VAULT_DIR="$(pwd)"
+VAULT_NAME="${1:-$(basename "$VAULT_DIR")}"
+CONFIG_DIR="$INFRA_HOME/config/$VAULT_NAME"
+LOG_DIR="$INFRA_HOME/logs/$VAULT_NAME"
+PORTS_FILE="$INFRA_HOME/ports.txt"
+
+log() { printf '\n==> %s\n' "$1"; }
+
+# --- 0. sanity ---------------------------------------------------------
+if [[ "$VAULT_DIR" == "$HOME" ]]; then
+  echo "Refusing to install into \$HOME directly - cd into a dedicated vault directory first." >&2
+  exit 1
+fi
+
+if ! command -v gh >/dev/null 2>&1; then
+  echo "gh CLI not found - install it (https://cli.github.com) and 'gh auth login', then re-run." >&2
+  exit 1
+fi
+if ! gh auth status >/dev/null 2>&1; then
+  echo "gh CLI is installed but not authenticated - run 'gh auth login', then re-run." >&2
+  exit 1
+fi
+
+log "Bootstrapping vault '$VAULT_NAME' at $VAULT_DIR"
+
+# --- 1. fetch/refresh the infra repo itself -----------------------------
+mkdir -p "$INFRA_HOME"
+if [[ -d "$INFRA_DIR/.git" ]]; then
+  log "Updating existing memvault-infra checkout"
+  git -C "$INFRA_DIR" pull --quiet
+else
+  log "Cloning memvault-infra to $INFRA_DIR"
+  gh repo clone "$REPO_SLUG" "$INFRA_DIR" -- --quiet
+fi
+
+# --- 2. dependencies ------------------------------------------------------
+if ! command -v uv >/dev/null 2>&1; then
+  log "Installing uv (Python tool runner - see https://docs.astral.sh/uv/)"
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
+if ! command -v fswatch >/dev/null 2>&1; then
+  if command -v brew >/dev/null 2>&1; then
+    log "Installing fswatch via Homebrew"
+    brew install fswatch
+  else
+    echo "fswatch not found and Homebrew isn't available - install fswatch manually, then re-run." >&2
+    exit 1
+  fi
+fi
+
+log "Installing/updating basic-memory and mcpo (uv tool)"
+uv tool install --quiet basic-memory >/dev/null || uv tool upgrade --quiet basic-memory >/dev/null
+uv tool install --quiet mcpo >/dev/null || uv tool upgrade --quiet mcpo >/dev/null
+
+UVX_PATH="$(command -v uvx)"
+
+# --- 3. vault directory setup ---------------------------------------------
+# No git init, ever - the folder may intentionally be un-tracked, or already
+# be its own repo, or be nested inside a larger one. Detect and adapt.
+HAS_GIT=0
+GIT_ROOT=""
+if git -C "$VAULT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  HAS_GIT=1
+  GIT_ROOT="$(git -C "$VAULT_DIR" rev-parse --show-toplevel)"
+  if [[ "$GIT_ROOT" != "$VAULT_DIR" ]]; then
+    log "Vault is nested inside an existing repo at $GIT_ROOT"
+  fi
+fi
+
+if [[ "$HAS_GIT" == "1" ]]; then
+  GITIGNORE="$VAULT_DIR/.gitignore"
+  touch "$GITIGNORE"
+  for pattern in ".DS_Store" ".basic-memory/"; do
+    grep -qxF "$pattern" "$GITIGNORE" || echo "$pattern" >> "$GITIGNORE"
+  done
+else
+  log "No git repo detected - skipping .gitignore, commit watcher, and push timer"
+fi
+
+mkdir -p "$VAULT_DIR/.claude/skills/memory-notes"
+cp "$INFRA_DIR/skills/memory-notes/SKILL.md" "$VAULT_DIR/.claude/skills/memory-notes/SKILL.md"
+
+# --- 4. isolated Basic Memory project registration ------------------------
+log "Registering '$VAULT_NAME' as an isolated Basic Memory project"
+mkdir -p "$CONFIG_DIR" "$LOG_DIR"
+BASIC_MEMORY_CONFIG_DIR="$CONFIG_DIR" "$UVX_PATH" basic-memory project add "$VAULT_NAME" "$VAULT_DIR" --quiet 2>/dev/null \
+  || BASIC_MEMORY_CONFIG_DIR="$CONFIG_DIR" "$UVX_PATH" basic-memory project add "$VAULT_NAME" "$VAULT_DIR"
+
+# --- 5. port assignment ----------------------------------------------------
+mkdir -p "$(dirname "$PORTS_FILE")"; touch "$PORTS_FILE"
+PORT="$(awk -v n="$VAULT_NAME" '$1==n{print $2}' "$PORTS_FILE")"
+if [[ -z "$PORT" ]]; then
+  PORT=8100
+  while grep -q " $PORT\$" "$PORTS_FILE"; do PORT=$((PORT + 1)); done
+  echo "$VAULT_NAME $PORT" >> "$PORTS_FILE"
+fi
+log "mcpo will serve this vault on http://127.0.0.1:$PORT"
+
+# --- 6. mcpo config ---------------------------------------------------------
+sed -e "s|__VAULT_NAME__|$VAULT_NAME|g" \
+    -e "s|__CONFIG_DIR__|$CONFIG_DIR|g" \
+    -e "s|__UVX_PATH__|$UVX_PATH|g" \
+    "$INFRA_DIR/mcpo/config.template.json" > "$CONFIG_DIR/mcpo-config.json"
+
+# --- 7. launchd services -----------------------------------------------------
+PLIST_DIR="$HOME/Library/LaunchAgents"
+mkdir -p "$PLIST_DIR"
+CURRENT_PATH="$PATH"
+
+install_plist() {
+  local template="$1" label_suffix="$2"
+  local out="$PLIST_DIR/com.memvault-infra.$VAULT_NAME.$label_suffix.plist"
+  sed -e "s|__VAULT_NAME__|$VAULT_NAME|g" \
+      -e "s|__VAULT_DIR__|$VAULT_DIR|g" \
+      -e "s|__INFRA_DIR__|$INFRA_DIR|g" \
+      -e "s|__CONFIG_DIR__|$CONFIG_DIR|g" \
+      -e "s|__LOG_DIR__|$LOG_DIR|g" \
+      -e "s|__PORT__|$PORT|g" \
+      -e "s|__UVX_PATH__|$UVX_PATH|g" \
+      -e "s|__PATH__|$CURRENT_PATH|g" \
+      "$INFRA_DIR/launchd/templates/$template" > "$out"
+  launchctl unload "$out" >/dev/null 2>&1 || true
+  launchctl load -w "$out"
+  echo "  loaded: $out"
+}
+
+log "Installing launchd services"
+install_plist "mcpo.plist.template" "mcpo"
+SERVICES="mcpo"
+if [[ "$HAS_GIT" == "1" ]]; then
+  install_plist "watch.plist.template" "watch"
+  install_plist "push.plist.template" "push"
+  SERVICES="mcpo,watch,push"
+fi
+
+# --- 8. integration instructions --------------------------------------------
+INSTRUCTIONS="$VAULT_DIR/INTEGRATIONS.md"
+{
+cat <<EOF
+# Connecting clients to the '$VAULT_NAME' vault
+
+Generated by memvault-infra/install.sh - re-run the installer to regenerate.
+
+## Claude Code / Claude Desktop / OpenCode (stdio, no bridge)
+
+Add to the client's MCP config:
+
+\`\`\`json
+{
+  "mcpServers": {
+    "$VAULT_NAME": {
+      "command": "$UVX_PATH",
+      "args": ["basic-memory", "mcp"],
+      "env": {
+        "BASIC_MEMORY_CONFIG_DIR": "$CONFIG_DIR",
+        "BASIC_MEMORY_MCP_PROJECT": "$VAULT_NAME"
+      }
+    }
+  }
+}
+\`\`\`
+
+Claude Code: project-level \`.claude/skills/memory-notes/SKILL.md\` was already
+installed by this script - it loads automatically. Claude Desktop / OpenCode:
+point them at the same file manually per their own skill/instruction config.
+
+## Zed
+
+Command palette -> \`agent: create skill from url\`, pointing at the raw
+GitHub URL of \`skills/memory-notes/SKILL.md\` in the memvault-infra repo.
+Add an MCP context server using the same command/args/env block above.
+
+## Open WebUI (via mcpo)
+
+mcpo is already running on port $PORT, proxying this vault only. Add it as a
+tool server in OWUI pointing at \`http://127.0.0.1:$PORT/$VAULT_NAME\`.
+Create a custom skill in OWUI's Skills workspace by pasting the contents of
+\`skills/memory-notes/SKILL.md\` from the memvault-infra repo.
+
+## Isolation reminder
+
+If you also run a second vault (work vs. personal), never attach both
+vaults' tool servers / MCP configs to the same client session or OWUI
+workspace at once - the server-side config is isolated per vault
+(BASIC_MEMORY_CONFIG_DIR, separate mcpo ports), but nothing stops a client
+from being pointed at both at the same time except discipline. Keep them in
+separate workspaces/presets per client.
+EOF
+
+if [[ "$HAS_GIT" == "0" ]]; then
+cat <<EOF
+
+## No git detected
+
+The commit watcher and push timer were **not** installed - there's no git
+repo here yet. Run \`git init\` (or nest this folder in one you already have)
+and re-run the installer to add them.
+EOF
+elif [[ "$GIT_ROOT" != "$VAULT_DIR" ]]; then
+cat <<EOF
+
+## Nested in an existing repo
+
+This vault lives inside a larger repo rooted at \`$GIT_ROOT\`. The commit
+watcher only stages/commits changes under \`$VAULT_DIR\` (pathspec-scoped -
+it will not touch unrelated files elsewhere in that repo). The push timer,
+however, pulls/pushes the **whole repo's current branch** every 5 minutes -
+that includes any other commits you've made there, not just vault ones. If
+that's not what you want, give the vault its own dedicated repo instead.
+EOF
+fi
+} > "$INSTRUCTIONS"
+
+log "Wrote $INSTRUCTIONS"
+cat "$INSTRUCTIONS"
+
+log "Done. Services running: com.memvault-infra.$VAULT_NAME.{$SERVICES}"
+echo "Logs: $LOG_DIR"

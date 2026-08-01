@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "__VAULT_NAME__": {
+      "command": "__UVX_PATH__",
+      "args": ["basic-memory", "mcp"],
+      "env": {
+        "BASIC_MEMORY_CONFIG_DIR": "__CONFIG_DIR__",
+        "BASIC_MEMORY_MCP_PROJECT": "__VAULT_NAME__"
+      }
+    }
+  }
+}

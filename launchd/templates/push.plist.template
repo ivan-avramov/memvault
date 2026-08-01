@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.memvault-infra.__VAULT_NAME__.push</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__INFRA_DIR__/scripts/push-timer.sh</string>
+    <string>__VAULT_DIR__</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>__PATH__</string>
+  </dict>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>__LOG_DIR__/push.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__LOG_DIR__/push.err.log</string>
+</dict>
+</plist>
