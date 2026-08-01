@@ -11,13 +11,17 @@ description: Frontmatter schema, relation vocabulary, and provenance rules for w
 2. Check existing tags before adding a new one. Reuse an existing tag if it
    already covers the concept.
 
-## Frontmatter (fixed schema - no other fields)
+## Calling write_note
 
-- `title` - required.
-- `type` - required. Always `summary`.
-- `permalink` - required.
-- `tags` - required. Reuse existing tags where possible.
-- `date` - required. Note creation date. Immutable - never update on edit.
+Pass `note_type: "summary"` (not a hand-written `type:` line) and put every
+field below except `title`/`tags` into the `metadata` dict param - do not
+hand-author YAML frontmatter in `content`. `title` and `content` are the
+note's title and body. `permalink` is generated automatically, do not set it.
+
+`metadata` fields (fixed schema - no other fields):
+
+- `date` - required. Note creation date (e.g. `2026-02-20`). Not set
+  automatically - you must pass it. Immutable - never update on edit.
 - `source_path` - repo-relative path, when the source is a file in the vault
   directory. Mutually exclusive with `source_url`.
 - `source_url` - the source's URL: a web article, or a file in approved
@@ -30,6 +34,9 @@ description: Frontmatter schema, relation vocabulary, and provenance rules for w
 - `source_updated_date` - optional. Same rule, for
   `article:modified_time` / `dateModified` / PDF `ModDate` / a visible "last
   updated" note. Capture alongside `source_published_date` when both exist.
+
+`tags` - required, pass as the top-level `tags` param. Reuse existing tags
+where possible.
 
 ## Relations (fixed vocabulary - no other types)
 

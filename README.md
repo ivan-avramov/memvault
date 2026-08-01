@@ -119,14 +119,30 @@ with real paths/ports. Summary:
   `skills/memory-notes/SKILL.md` into OWUI's Skills workspace as a custom
   skill.
 
-## Known gaps / unverified assumptions
+## Verified (smoke-tested 2026-08-01, no-git path)
 
-- `mcpo`'s per-server `env` block in `mcpo/config.template.json` follows the
-  same shape as Claude Desktop's `mcpServers` config, but wasn't confirmed
-  byte-for-byte against mcpo's current schema - smoke-test on first run.
-- `basic-memory project add` flags (`--quiet`, non-interactive behavior) are
-  inferred from docs, not verified end-to-end; the script falls back to a
-  non-quiet retry if the quiet form errors, but watch the output on first
-  run.
-- Everything here targets macOS (launchd, FSEvents-backed fswatch, Homebrew
-  for `fswatch`). No Linux/systemd path yet.
+Full `install.sh` run against a fresh, non-git directory: fswatch/basic-memory/mcpo
+install, isolated project registration, `list_memory_projects` confirmed
+server-side lock to the single project (`BASIC_MEMORY_MCP_PROJECT` really does
+constrain operations, not just hide the registry), `write_note` through mcpo's
+HTTP bridge produced correct on-disk frontmatter, forward-reference relations
+resolved as "unresolved" as expected, `delete_note` cleaned up correctly.
+
+**Bug found and fixed:** `mcpo` 0.0.20 (latest on PyPI) imports
+`streamablehttp_client`, which `mcp>=2.0` renamed to `streamable_http_client` -
+without a pin, `uv tool install mcpo` resolves `mcp` 2.x and mcpo crash-loops
+on startup (`ImportError`, visible in `mcpo.err.log`). `install.sh` now pins
+`mcp<2` via `--with`. If mcpo ships a 2.x-compatible release later, drop the
+pin.
+
+**Skill corrected against the real API:** `write_note`'s actual schema takes
+`note_type` and a `metadata` dict, not hand-authored YAML frontmatter in
+`content` - the skill originally assumed the latter. Also, `date` is not
+auto-populated by Basic Memory; it must be passed explicitly. Fixed in both
+`SKILL.md` and this README's mental model - if you're recalling the schema
+from memory rather than reading `SKILL.md` fresh, assume it changed.
+
+Not yet tested: the git-tracked and nested-repo paths (`watch`/`push`
+services), Claude Code/Zed/OWUI client integration end-to-end, Linux.
+Everything here targets macOS (launchd, FSEvents-backed fswatch, Homebrew for
+`fswatch`) - no Linux/systemd path yet.

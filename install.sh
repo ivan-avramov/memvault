@@ -80,7 +80,11 @@ fi
 
 log "Installing/updating basic-memory and mcpo (uv tool)"
 uv tool install --quiet basic-memory >/dev/null || uv tool upgrade --quiet basic-memory >/dev/null
-uv tool install --quiet mcpo >/dev/null || uv tool upgrade --quiet mcpo >/dev/null
+# mcpo 0.0.20 (latest as of writing) imports a name that mcp>=2.0 renamed
+# (streamablehttp_client -> streamable_http_client) and crash-loops on
+# startup if uv resolves a bare `mcp` dependency to 2.x. Pin mcp<2 until
+# mcpo publishes a release compatible with the new name.
+uv tool install --quiet mcpo --with "mcp<2" >/dev/null || uv tool upgrade --quiet mcpo --with "mcp<2" >/dev/null
 
 UVX_PATH="$(command -v uvx)"
 
