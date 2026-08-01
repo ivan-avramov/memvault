@@ -13,6 +13,10 @@ description: Frontmatter schema, relation vocabulary, and provenance rules for w
 
 ## Calling write_note
 
+`directory`: `Sources/<slug>`, where `<slug>` is a short kebab-case slug of
+the note's title. If a raw source file is also being kept (see "Large source
+files"), it lives alongside the note in the same `Sources/<slug>/` directory.
+
 Pass `note_type: "summary"` (not a hand-written `type:` line) and put every
 field below except `title`/`tags` into the `metadata` dict param - do not
 hand-author YAML frontmatter in `content`. `title` and `content` are the
