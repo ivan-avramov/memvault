@@ -41,7 +41,7 @@ It:
    `.gitignore` for `.DS_Store` / `.basic-memory/` in the vault directory.
    If there's no git at all, the commit watcher and push timer are skipped
    (nothing to commit/push to) and `INTEGRATIONS.md` says so.
-5. Copies the note-writing skill to `.claude/skills/memory-notes/SKILL.md` in
+5. Copies the note-writing skill to `.claude/skills/memnote/SKILL.md` in
    the vault (picked up automatically by Claude Code).
 6. Registers the current directory as a Basic Memory project, in an
    **isolated** config directory (`~/.memvault-infra/config/<vault-name>/`) - see
@@ -139,11 +139,11 @@ with real paths/ports. Summary:
   points `command`/`args` at `basic-memory mcp` (via `uvx`) with
   `BASIC_MEMORY_CONFIG_DIR` and `BASIC_MEMORY_MCP_PROJECT` set in `env`.
 - **Zed** - same stdio MCP config, plus `agent: create skill from url` in the
-  command palette pointed at this repo's `skills/memory-notes/SKILL.md` raw
+  command palette pointed at this repo's `skills/memnote/SKILL.md` raw
   URL.
 - **Open WebUI** - add a tool server pointing at
   `http://127.0.0.1:<port>/<vault-name>` (mcpo), and paste
-  `skills/memory-notes/SKILL.md` into OWUI's Skills workspace as a custom
+  `skills/memnote/SKILL.md` into OWUI's Skills workspace as a custom
   skill.
 
 ## Verified (smoke-tested 2026-08-01, no-git path)

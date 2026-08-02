@@ -1,5 +1,5 @@
 ---
-name: memory-notes
+name: memnote
 description: Frontmatter schema, relation vocabulary, and provenance rules for writing knowledge-vault notes with Basic Memory. Use before write_note/edit_note.
 ---
 

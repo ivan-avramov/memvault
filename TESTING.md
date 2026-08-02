@@ -3,7 +3,7 @@
 What's already been smoke-tested by Claude and doesn't need re-checking:
 install.sh's no-git path, the mcpo bridge (incl. the `mcp<2` pin), the
 isolation model (`BASIC_MEMORY_CONFIG_DIR`/`BASIC_MEMORY_MCP_PROJECT`),
-`write_note`/`search_notes`/`delete_note` over HTTP, the memory-notes skill
+`write_note`/`search_notes`/`delete_note` over HTTP, the memnote skill
 followed correctly by a fresh Claude subagent, and opencode's stdio MCP
 connection (config block in `INTEGRATIONS.md` confirmed correct - `opencode
 mcp list` reports "connected"). Everything below still needs a human because
@@ -23,7 +23,7 @@ never-configured-at-all from inside the session, so this is easy to miss.
 command instead, which skips the approval prompt entirely. Re-test with that:
 
 1. `cd` into a throwaway dir, run the installer, name the vault e.g. `test-cc`.
-2. Open that folder in Claude Code. Confirm `.claude/skills/memory-notes/SKILL.md`
+2. Open that folder in Claude Code. Confirm `.claude/skills/memnote/SKILL.md`
    is picked up (ask Claude to list its available skills) - this part already
    passed, shouldn't need re-checking, but worth a quick glance.
 3. Run the `claude mcp add-json` command from the generated `INTEGRATIONS.md`
@@ -51,7 +51,7 @@ state on it too.
 ## 3. Zed
 
 1. Command palette -> `agent: create skill from url`, paste the raw GitHub
-   URL of `skills/memory-notes/SKILL.md` from this repo. Confirm it shows up
+   URL of `skills/memnote/SKILL.md` from this repo. Confirm it shows up
    under Zed's skills list.
 2. Add an MCP context server using the same command/args/env block from
    `INTEGRATIONS.md` (Zed's MCP config UI, not a JSON file - see Zed's MCP
@@ -72,7 +72,7 @@ GUI-only anyway).
 2. Settings -> Tools -> add server pointing at
    `http://127.0.0.1:<port>/<vault-name>` (mcpo is already running per-vault
    after `install.sh` - reuse a real vault or spin up a throwaway one).
-3. Workspace -> Skills -> new skill, paste `skills/memory-notes/SKILL.md`'s
+3. Workspace -> Skills -> new skill, paste `skills/memnote/SKILL.md`'s
    contents.
 4. New chat, enable the tool + skill, ask it to write a note. Check the file
    on disk.

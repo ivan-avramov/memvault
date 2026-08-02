@@ -111,8 +111,8 @@ else
   log "No git repo detected - skipping .gitignore, commit watcher, and push timer"
 fi
 
-mkdir -p "$VAULT_DIR/.claude/skills/memory-notes"
-cp "$INFRA_DIR/skills/memory-notes/SKILL.md" "$VAULT_DIR/.claude/skills/memory-notes/SKILL.md"
+mkdir -p "$VAULT_DIR/.claude/skills/memnote"
+cp "$INFRA_DIR/skills/memnote/SKILL.md" "$VAULT_DIR/.claude/skills/memnote/SKILL.md"
 
 # --- 4. isolated Basic Memory project registration ------------------------
 log "Registering '$VAULT_NAME' as an isolated Basic Memory project"
@@ -198,7 +198,7 @@ claude mcp add-json $VAULT_NAME '{"command": "$UVX_PATH", "args": ["basic-memory
 \`\`\`
 
 Verify with \`claude mcp list\` (should show \`✔ Connected\`, not pending) before
-testing a write. The project-level \`.claude/skills/memory-notes/SKILL.md\`
+testing a write. The project-level \`.claude/skills/memnote/SKILL.md\`
 was already installed by this script and loads automatically - skill loading
 and tool connection are independent, so seeing the skill in Claude's skill
 list does **not** mean the MCP server is connected.
@@ -234,7 +234,7 @@ this file's contents into the vault directory as \`AGENTS.md\` instead.
 ## Zed
 
 Command palette -> \`agent: create skill from url\`, pointing at the raw
-GitHub URL of \`skills/memory-notes/SKILL.md\` in the memvault-infra repo.
+GitHub URL of \`skills/memnote/SKILL.md\` in the memvault-infra repo.
 Add an MCP context server using the same command/args/env block above.
 
 ## Open WebUI (via mcpo)
@@ -242,7 +242,7 @@ Add an MCP context server using the same command/args/env block above.
 mcpo is already running on port $PORT, proxying this vault only. Add it as a
 tool server in OWUI pointing at \`http://127.0.0.1:$PORT/$VAULT_NAME\`.
 Create a custom skill in OWUI's Skills workspace by pasting the contents of
-\`skills/memory-notes/SKILL.md\` from the memvault-infra repo.
+\`skills/memnote/SKILL.md\` from the memvault-infra repo.
 
 ## Isolation reminder
 
