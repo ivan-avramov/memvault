@@ -11,11 +11,24 @@ it's GUI-driven, or was blocked by something outside this repo.
 
 ## 1. Claude Code (skill auto-load + tool use)
 
+**Already manually tested once - failed on step 3, root cause found and
+fixed.** The skill loaded fine (showed up in Claude's skill list), but no
+`write_note`/`search_notes` tools were available. Cause: the MCP config went
+into (or was described vaguely enough to imply) a hand-edited `.mcp.json`,
+which Claude Code treats as project-scoped and requires an explicit approval
+step for (`claude mcp get <name>` shows `⏸ Pending approval` until then) -
+skill-loaded-but-tools-missing looks identical to
+never-configured-at-all from inside the session, so this is easy to miss.
+`INTEGRATIONS.md` now generates the `claude mcp add-json ... --scope local`
+command instead, which skips the approval prompt entirely. Re-test with that:
+
 1. `cd` into a throwaway dir, run the installer, name the vault e.g. `test-cc`.
 2. Open that folder in Claude Code. Confirm `.claude/skills/memory-notes/SKILL.md`
-   is picked up (ask Claude to list its available skills).
-3. Add the MCP config block from `INTEGRATIONS.md` to Claude Code's MCP
-   settings, restart the session.
+   is picked up (ask Claude to list its available skills) - this part already
+   passed, shouldn't need re-checking, but worth a quick glance.
+3. Run the `claude mcp add-json` command from the generated `INTEGRATIONS.md`
+   (not a hand-edited `.mcp.json`). Restart the session, then `claude mcp
+   list` and confirm `✔ Connected`, not pending.
 4. Ask Claude to search for and then write a note about some real thing
    you've read recently. Check the resulting file's frontmatter matches the
    skill schema (`note_type: summary`, `metadata.date`, `source_url` or
@@ -23,13 +36,17 @@ it's GUI-driven, or was blocked by something outside this repo.
 5. Tear down: unload the launchd plists, `rm -rf` the config/log dirs under
    `~/.memvault-infra/`, delete the throwaway dir - same steps Claude used
    during its own smoke test, see git log for the exact commands if needed.
+   Also `claude mcp remove <name> --scope local` to undo step 3.
 
 ## 2. Claude Desktop
 
 Same as above, but the MCP config goes in
 `~/Library/Application Support/Claude/claude_desktop_config.json` and you
 need to fully quit/reopen the app for it to pick up the change (no hot
-reload). Verify the tool appears under the 🔌 icon before testing a write.
+reload). Verify the tool appears under the 🔌 icon **and shows connected**
+before testing a write - given what just happened with Claude Code, don't
+assume the icon showing up means it actually connected; check for an error
+state on it too.
 
 ## 3. Zed
 
