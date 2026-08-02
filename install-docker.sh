@@ -92,11 +92,37 @@ if [[ "$HAS_GIT" == "1" && -f "$HOME/.gitconfig" ]]; then
   log "Mounting host ~/.gitconfig for commit identity"
   RUN_ARGS+=(-v "$HOME/.gitconfig:/root/.gitconfig:ro")
 fi
-if [[ "$HAS_GIT" == "1" && -n "${SSH_AUTH_SOCK:-}" && -S "${SSH_AUTH_SOCK:-}" ]]; then
-  log "Forwarding host SSH agent for git push"
-  RUN_ARGS+=(-v "$SSH_AUTH_SOCK:/ssh-agent" -e "SSH_AUTH_SOCK=/ssh-agent")
-elif [[ "$HAS_GIT" == "1" ]]; then
-  log "No SSH_AUTH_SOCK detected on host - commits will work, git push will not until you re-run with an SSH agent running"
+if [[ "$HAS_GIT" == "1" ]]; then
+  # Two mechanisms, mounted together, because which one actually works
+  # depends on how you authenticate to git remotes - and it's common to
+  # have neither, one, or the other, not always what you'd guess:
+  #   - ~/.ssh mounted read-only: covers static identity-file auth (the
+  #     SSH client's own default id_ed25519/id_rsa lookup) - no running
+  #     agent required. This is a real trust boundary: it makes your
+  #     private key readable inside the container.
+  #   - SSH_AUTH_SOCK forwarded: covers a running agent with loaded
+  #     identities. Only reliable on a native Linux Docker host - on
+  #     macOS (Docker Desktop/OrbStack), the daemon runs inside a Linux
+  #     VM and a plain bind-mount of the host's agent socket does not
+  #     cross that boundary; it shows up as an empty path inside the
+  #     container and connecting to it fails with "Connection refused."
+  #     No known simple/native fix at the container-run level for this -
+  #     if you're on macOS and specifically need agent-based auth (e.g. a
+  #     hardware key with no exportable identity file), the ~/.ssh mount
+  #     above won't help you either; you're limited to whatever your
+  #     Docker Desktop/OrbStack version's own SSH-forwarding feature (if
+  #     any) provides outside of what this script does.
+  if [[ -d "$HOME/.ssh" ]]; then
+    log "Mounting host ~/.ssh read-only for git push (private key becomes readable inside the container)"
+    RUN_ARGS+=(-v "$HOME/.ssh:/root/.ssh:ro")
+  fi
+  if [[ -n "${SSH_AUTH_SOCK:-}" && -S "${SSH_AUTH_SOCK:-}" ]]; then
+    log "Also forwarding host SSH agent (works reliably on Linux hosts; unreliable on macOS - see comment above)"
+    RUN_ARGS+=(-v "$SSH_AUTH_SOCK:/ssh-agent" -e "SSH_AUTH_SOCK=/ssh-agent")
+  fi
+  if [[ ! -d "$HOME/.ssh" && ! ( -n "${SSH_AUTH_SOCK:-}" && -S "${SSH_AUTH_SOCK:-}" ) ]]; then
+    log "No ~/.ssh and no SSH agent detected - commits will work, git push will not until one is available"
+  fi
 fi
 
 log "Starting container"
