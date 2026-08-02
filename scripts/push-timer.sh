@@ -11,7 +11,7 @@ GIT_ROOT="$(git -C "$VAULT_DIR" rev-parse --show-toplevel)"
 
 # Nothing to sync if no remote is configured yet (e.g. work vault before
 # IT/security has approved a remote - see the still-open item in
-# SEED_DESIGN.md). Silently no-op rather than erroring the launchd job.
+# DESIGN.md). Silently no-op rather than erroring the launchd job.
 if ! git -C "$GIT_ROOT" remote get-url origin >/dev/null 2>&1; then
   exit 0
 fi

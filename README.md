@@ -1,6 +1,6 @@
 # memvault-infra
 
-Tooling for the local-execution knowledge vault design in `memvault/docs/SEED_DESIGN.md`.
+Tooling for the local-execution knowledge vault design in `memvault/docs/DESIGN.md`.
 Holds no vault content itself - just the install script, the shared
 note-writing skill, and the background services that wire a vault directory
 up to Basic Memory, mcpo, and git.
@@ -161,9 +161,10 @@ either stay on the host anyway (splitting one vault's stack across two
 management systems) or run against a bind-mounted volume inside the
 container (slower/flakier file-change notification on macOS, plus wiring
 host git identity/SSH keys into the container for no benefit). Docker is the
-right call for the future always-on host in `SEED_DESIGN.md` §4 - a real
-Linux server solving a genuinely different problem - not for this Mac-local
-stack.
+right call for the deferred self-hosted-mobile always-on host in `DESIGN.md`
+§3b - a real Linux server solving a genuinely different problem, and
+currently deprioritized in favor of Basic Memory Cloud - not for this
+Mac-local stack.
 
 ## Client integration
 
