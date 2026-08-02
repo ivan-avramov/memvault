@@ -28,6 +28,11 @@ EOF
 
 if git -C /vault rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "==> /vault is a git repo - starting commit watcher and push timer"
+  # Falls back to a generic identity only if no ~/.gitconfig was mounted in
+  # (install-docker.sh mounts the host's by default when present) - without
+  # this, the watcher's first commit hard-fails with no author identity.
+  git config --global user.email >/dev/null 2>&1 || git config --global user.email "memvault@localhost"
+  git config --global user.name >/dev/null 2>&1 || git config --global user.name "memvault"
   /opt/memvault/scripts/watch-commit.sh /vault &
   ( while true; do
       sleep 300

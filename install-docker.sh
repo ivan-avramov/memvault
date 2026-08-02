@@ -88,6 +88,10 @@ RUN_ARGS=(
   -v "$VAULT_DIR:/vault"
   -v "$CONFIG_DIR:/data"
 )
+if [[ "$HAS_GIT" == "1" && -f "$HOME/.gitconfig" ]]; then
+  log "Mounting host ~/.gitconfig for commit identity"
+  RUN_ARGS+=(-v "$HOME/.gitconfig:/root/.gitconfig:ro")
+fi
 if [[ "$HAS_GIT" == "1" && -n "${SSH_AUTH_SOCK:-}" && -S "${SSH_AUTH_SOCK:-}" ]]; then
   log "Forwarding host SSH agent for git push"
   RUN_ARGS+=(-v "$SSH_AUTH_SOCK:/ssh-agent" -e "SSH_AUTH_SOCK=/ssh-agent")
