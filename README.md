@@ -101,7 +101,34 @@ Up to three launchd LaunchAgents, labeled `com.memvault-infra.<vault-name>.{mcpo
   internal loop). No-ops if no git remote is configured yet.
 
 Logs: `~/.memvault-infra/logs/<vault-name>/{mcpo,watch,push}.{out,err}.log`.
-Uninstall a service: `launchctl unload ~/Library/LaunchAgents/com.memvault-infra.<vault-name>.<service>.plist`.
+
+Manage these with `memvaultctl` (symlinked onto `PATH` by `install.sh`)
+instead of hand-typing `launchctl` commands and plist paths:
+
+```bash
+memvaultctl status [vault]              # all vaults, or one vault's services
+memvaultctl start|stop|restart <vault> [service]   # default: all services
+memvaultctl logs <vault> [service] [-f]
+memvaultctl uninstall <vault>           # stop + remove services/config/logs/
+                                         # port assignment. Leaves the vault
+                                         # directory and its git repo alone.
+```
+
+**Why not Docker for this?** launchd already provides the auto-restart/start/
+stop/logs a container runtime would - it's the OS's native service manager,
+running for free, without Docker Desktop's own background VM as a second
+daemon. `uv tool install` already gives per-tool dependency isolation
+(demonstrated directly by the `mcp<2` pin above having zero effect on Basic
+Memory's separate environment). The one piece that would get *worse* under
+Docker is the watcher: it needs FSEvents on the real host filesystem and
+needs to run real `git commit`s against your actual host repo, so it would
+either stay on the host anyway (splitting one vault's stack across two
+management systems) or run against a bind-mounted volume inside the
+container (slower/flakier file-change notification on macOS, plus wiring
+host git identity/SSH keys into the container for no benefit). Docker is the
+right call for the future always-on host in `SEED_DESIGN.md` §4 - a real
+Linux server solving a genuinely different problem - not for this Mac-local
+stack.
 
 ## Client integration
 
