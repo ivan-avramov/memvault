@@ -6,10 +6,24 @@ note-writing skill, and the background services that wire a vault directory
 up to Basic Memory, mcpo, and git.
 
 Vault content repos (work vault, personal vault) are separate, created
-on-demand by running `install.sh` inside whatever directory you want each
+on-demand by running an installer inside whatever directory you want each
 vault to live in - this repo doesn't pre-create them.
 
-## What one `install.sh` run does
+Two install paths, same result (an isolated Basic Memory project + mcpo
+bridge + the memnote skill + optional git automation):
+
+- **`install.sh`** - native (`uv tool install` + macOS `launchd`). Zero
+  container overhead, but macOS-only and touches global host tools
+  (installs `uv`/`fswatch`, writes auto-starting `launchd` services).
+- **`install-docker.sh`** - one Docker container per vault, built locally.
+  Cross-platform, much smaller footprint on your system (only touches a
+  container and the directories you mount in). Recommended for anyone not
+  on macOS, or who'd rather not have this modify global host tooling.
+
+Both are managed the same way afterward via `memvaultctl`, which
+auto-detects which backend a given vault uses.
+
+## What one `install.sh` run does (native)
 
 Run from inside the target vault directory - a fresh empty folder, an
 existing git repo, or a folder nested inside a larger repo are all fine:
@@ -62,6 +76,27 @@ but the push timer pulls/pushes that repo's **entire current branch** every 5
 minutes, since pull/push aren't path-scoped in git - including any other
 commits you've made there. Give the vault its own repo if that's not what you
 want.
+
+## What one `install-docker.sh` run does
+
+Same isolation model, same `.gitignore`/skill/`INTEGRATIONS.md` steps as
+above, but: builds `memvault-infra:local` from `docker/Dockerfile` (one-time
+cost, cached after), then `docker run`s a single container per vault -
+`--name memvault-<vault-name>`, `-p 8000` with no host-side port (Docker
+picks a free one, resolved via `docker port`), the vault directory and its
+isolated `~/.memvault-infra/config/<vault-name>/` bind-mounted in. Inside the
+container, mcpo runs in the foreground; the watch/push loops run alongside
+it as background processes if `/vault` is git-tracked at container start,
+using the exact same `scripts/watch-commit.sh`/`push-timer.sh` as the native
+path. Git commit identity comes from the host's `~/.gitconfig`, mounted
+read-only when present (falls back to a generic `memvault@localhost`
+identity otherwise, so it never hard-fails); `git push` needs
+`$SSH_AUTH_SOCK` forwarded from the host, done automatically when detected.
+
+Stdio clients (Claude Code, Claude Desktop, OpenCode) connect via
+`docker exec -i <container> uvx basic-memory mcp` instead of a direct local
+command - confirmed this actually speaks MCP correctly (raw `initialize`
+handshake tested, not just "the process starts").
 
 ## Isolation model
 
@@ -169,7 +204,33 @@ auto-populated by Basic Memory; it must be passed explicitly. Fixed in both
 `SKILL.md` and this README's mental model - if you're recalling the schema
 from memory rather than reading `SKILL.md` fresh, assume it changed.
 
-Not yet tested: the git-tracked and nested-repo paths (`watch`/`push`
-services), Claude Code/Zed/OWUI client integration end-to-end, Linux.
-Everything here targets macOS (launchd, FSEvents-backed fswatch, Homebrew for
-`fswatch`) - no Linux/systemd path yet.
+Not yet tested (native path): the nested-in-parent-repo case specifically,
+Claude Code/Zed/OWUI client integration end-to-end. Everything native
+targets macOS (launchd, FSEvents-backed fswatch, Homebrew for `fswatch`) - no
+Linux/systemd path, by design (that's what `install-docker.sh` is for).
+
+## Verified (Docker path, smoke-tested 2026-08-02, git-tracked vault)
+
+Full `install-docker.sh` run via the real `gh api | bash` entrypoint against
+a fresh git-tracked throwaway vault: image build, container start, `mcpo`
+HTTP bridge, `write_note` producing correct on-disk frontmatter on the
+bind-mounted host directory, the containerized watcher auto-committing a
+real host-side file edit, `docker exec -i uvx basic-memory mcp` confirmed to
+actually complete a real MCP `initialize` handshake (not just "the process
+doesn't crash"), and `memvaultctl status/stop/start/logs/uninstall` all
+working against the Docker backend including the port-changes-on-restart
+behavior that's inherent to not fixing a host port.
+
+**Bug found and fixed:** the container had no git identity at all - the
+watcher's first commit hard-failed (`fatal: unable to auto-detect email
+address`). `install-docker.sh` now mounts the host's `~/.gitconfig`
+read-only when present; `entrypoint.sh` falls back to a generic
+`memvault@localhost` identity if it's missing, so it never hard-fails
+either way.
+
+Not yet tested: `git push` through the forwarded SSH agent (watcher/commit
+side confirmed, push side wasn't exercised against a real remote), Linux as
+the Docker host (only tested via OrbStack on macOS), Claude
+Desktop/Zed/OpenCode/OWUI against a Docker-backed vault specifically (the
+`docker exec` stdio mechanism is confirmed at the protocol level, not yet
+through an actual client).

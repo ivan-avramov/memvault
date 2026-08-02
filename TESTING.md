@@ -6,8 +6,14 @@ isolation model (`BASIC_MEMORY_CONFIG_DIR`/`BASIC_MEMORY_MCP_PROJECT`),
 `write_note`/`search_notes`/`delete_note` over HTTP, the memnote skill
 followed correctly by a fresh Claude subagent, and opencode's stdio MCP
 connection (config block in `INTEGRATIONS.md` confirmed correct - `opencode
-mcp list` reports "connected"). Everything below still needs a human because
-it's GUI-driven, or was blocked by something outside this repo.
+mcp list` reports "connected"). Also now verified: `install-docker.sh`
+end to end against a git-tracked vault (image build, container start, the
+git-identity fix, watcher auto-commit, `write_note`, `docker exec -i` as a
+real MCP stdio bridge, `memvaultctl` against the Docker backend) - see
+the README's "Verified (Docker path)" section for the full list. Everything
+below still needs a human because it's GUI-driven, blocked on something
+outside this repo, or specifically Docker+`git push` (identity/commit was
+tested, the actual push through the forwarded SSH agent wasn't).
 
 ## 1. Claude Code (skill auto-load + tool use)
 
@@ -109,3 +115,30 @@ etc.) don't match what `mlx-serve` is actually currently serving on
 copy the skill to the vault dir as `AGENTS.md` (opencode doesn't consume
 `SKILL.md`), then `opencode run --dir <vault-dir> --auto "<task>"` and check
 the resulting note the same way as the Claude Code test.
+
+## 7. Docker path: git push through the forwarded SSH agent
+
+The container's own git identity/commit was verified (a real host-attributed
+commit landed correctly), but push wasn't - no throwaway GitHub remote was
+set up during the smoke test. Point a throwaway vault's git remote at a real
+(disposable) GitHub repo, run `install-docker.sh` on it, edit a file, and
+either wait for the container's 5-minute push loop or exec into it directly
+to force one sooner. Confirm the commit actually lands on the remote, not
+just that `git push` didn't error locally.
+
+## 8. Docker path: clients other than the raw protocol/HTTP checks already done
+
+`docker exec -i <container> uvx basic-memory mcp` was confirmed to complete
+a real MCP `initialize` handshake by hand, and `write_note` was confirmed
+through the container's mcpo HTTP bridge directly - neither was tested
+through an actual client. Repeat tests 1-4 above, but against a
+Docker-backed vault (`install-docker.sh` instead of `install.sh`), using the
+`docker exec -i ...` command block from that vault's generated
+`INTEGRATIONS.md` instead of the native stdio command.
+
+## 9. Docker path: Linux as the host
+
+Only tested via OrbStack on macOS. The whole point of the Docker path is
+cross-platform reach - worth confirming `install-docker.sh` actually works
+unmodified on a Linux Docker host (bind mount permissions and SSH agent
+socket forwarding are the most likely places for host-OS-specific surprises).
