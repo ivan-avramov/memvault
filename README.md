@@ -1,6 +1,6 @@
 # memvault-infra
 
-Tooling for the local-execution knowledge vault design in `memvault/docs/DESIGN.md`.
+Tooling for the local-execution knowledge vault design in `DESIGN.md`.
 Holds no vault content itself - just the install script, the shared
 note-writing skill, and the background services that wire a vault directory
 up to Basic Memory, mcpo, and git.
