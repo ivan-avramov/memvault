@@ -167,6 +167,15 @@ if [[ "$HAS_GIT" == "1" ]]; then
   SERVICES="mcpo,watch,push"
 fi
 
+# --- 7b. memvaultctl -------------------------------------------------------
+for bindir in /opt/homebrew/bin /usr/local/bin; do
+  if [[ -w "$bindir" ]]; then
+    ln -sf "$INFRA_DIR/scripts/memvaultctl.sh" "$bindir/memvaultctl"
+    log "memvaultctl linked to $bindir/memvaultctl - see 'memvaultctl status'"
+    break
+  fi
+done
+
 # --- 8. integration instructions --------------------------------------------
 INSTRUCTIONS="$VAULT_DIR/INTEGRATIONS.md"
 {
