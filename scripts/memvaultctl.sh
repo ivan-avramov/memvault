@@ -155,7 +155,7 @@ cmd_uninstall() {
       for s in "${SERVICES[@]}"; do rm -f "$(plist_path "$vault" "$s")"; done
       rm -rf "$HOME/.memvault-infra/config/$vault" "$LOG_DIR_ROOT/$vault"
       local ports="$HOME/.memvault-infra/ports.txt"
-      [[ -f "$ports" ]] && grep -v "^$vault " "$ports" > "$ports.tmp" && mv "$ports.tmp" "$ports"
+      [[ -f "$ports" ]] && grep -v "^$vault " "$ports" > "$ports.tmp" && mv -f "$ports.tmp" "$ports"
       ;;
     docker)
       docker rm -f "$(container_name "$vault")" >/dev/null

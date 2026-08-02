@@ -75,7 +75,7 @@ else
 fi
 
 mkdir -p "$VAULT_DIR/.claude/skills/memnote"
-cp "$INFRA_DIR/skills/memnote/SKILL.md" "$VAULT_DIR/.claude/skills/memnote/SKILL.md"
+cp -f "$INFRA_DIR/skills/memnote/SKILL.md" "$VAULT_DIR/.claude/skills/memnote/SKILL.md"
 mkdir -p "$CONFIG_DIR"
 
 # --- 4. run the container ---------------------------------------------------

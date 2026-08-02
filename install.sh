@@ -112,7 +112,7 @@ else
 fi
 
 mkdir -p "$VAULT_DIR/.claude/skills/memnote"
-cp "$INFRA_DIR/skills/memnote/SKILL.md" "$VAULT_DIR/.claude/skills/memnote/SKILL.md"
+cp -f "$INFRA_DIR/skills/memnote/SKILL.md" "$VAULT_DIR/.claude/skills/memnote/SKILL.md"
 
 # --- 4. isolated Basic Memory project registration ------------------------
 log "Registering '$VAULT_NAME' as an isolated Basic Memory project"
