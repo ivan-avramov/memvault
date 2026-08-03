@@ -164,8 +164,13 @@ in each vault's generated `INTEGRATIONS.md`, not something enforced by the infra
 Lives at `skills/memnote/SKILL.md` in `memvault-infra`, copied into
 `.claude/skills/memnote/` on every vault by the installer, and portable to every
 other client without format conversion: Zed imports it directly by URL
-(`agent: create skill from url` in the command palette — confirmed working), Open
-WebUI takes the same file pasted as a custom skill in its Skills workspace.
+(`agent: create skill from url` in the command palette), pointed at the local
+`file://` copy the installer already placed in the vault — **not** a
+`raw.githubusercontent.com` URL, which 404s unauthenticated against this
+private repo (Zed's URL import has no GitHub auth of its own; `gh repo clone`
+during install is what actually fetched the file, so no further fetch is
+needed). Open WebUI takes the same file pasted as a custom skill in its
+Skills workspace.
 AI-facing docs are written terse and directive, not explanatory — rationale for *why*
 belongs in this design doc and commit messages, not in a file an agent parses as
 instructions.
@@ -317,15 +322,34 @@ server reports "constrained to a single project," not just an empty list);
 `write_note`/`search_notes`/`delete_note` over HTTP; a fresh Claude Code process
 (not just the existing session) correctly following the skill end-to-end; `docker
 exec -i` as a real MCP stdio bridge (a raw `initialize` handshake completed
-successfully); Open WebUI's tool-server connectivity against an isolated throwaway
-instance; opencode's stdio MCP connection.
+successfully); opencode's stdio MCP connection.
+
+As of 2026-08-02, full Docker-path client integration for three clients, each via
+a real chat writing a correctly-schemed note to the bind-mounted vault (not just
+connectivity): **Claude Code**; **Zed via ACP** with Claude Code as the backing
+agent (this reads Claude Code's own project config directly — `.claude/skills/`,
+`claude mcp add-json --scope local` — so it needed no Zed-specific setup at all;
+Zed's own *native* agent panel, a separate code path, remains unverified); and
+**Open WebUI**, which surfaced three real gotchas worth keeping: (1) the
+tool-server URL must be host-resolvable (`127.0.0.1`/`localhost`) — OWUI's
+OpenAPI tool-server calls are made client-side, from the browser itself, not
+proxied through its backend container, so `host.docker.internal` (which only
+resolves inside containers) silently fails there even though the backend
+container can reach it fine; (2) both the tool server and the skill are
+disabled by default and need explicit per-chat activation (or per-model
+attachment in Workspace → Models), not just being saved/connected in Admin
+Settings; (3) OWUI ships its own built-in Notes feature with identically-named
+functions (`write_note`/`search_notes`) — if the external tool isn't actually
+toggled on for that chat, the model silently answers with the built-in one
+instead, producing a note that looks superficially right but doesn't match
+this skill's schema (e.g. missing the required `date` field).
 
 **Still needs a human** (GUI-only, or needs infrastructure only the user has access
-to — full list with exact steps in `TESTING.md`): Claude Desktop and
-Zed end-to-end (both pure GUI apps, confirmed no scriptable/headless path exists for
-either); Open WebUI's remaining GUI-only steps (pasting the skill, one real chat);
-opencode's full agentic run (blocked on an unrelated local model-config mismatch on
-this machine); the native install's nested-inside-a-parent-repo case specifically;
+to — full list with exact steps in `TESTING.md`): Claude Desktop end-to-end (pure
+GUI app, confirmed no scriptable/headless path exists); Zed's native (non-ACP)
+agent panel specifically; opencode's full agentic run (blocked on an unrelated
+local model-config mismatch on this machine); the native install's
+nested-inside-a-parent-repo case specifically;
 Linux as the Docker host (only tested via OrbStack on macOS so far).
 
 ## 6. Capture workflow

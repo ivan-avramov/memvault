@@ -1,13 +1,18 @@
 # Manual test plan
 
-Verified by Claude, doesn't need re-checking (see README's "Verified"
-sections for full detail): native no-git install flow, mcpo bridge (incl.
+Verified by Claude, doesn't need re-checking (see `DESIGN.md` §5 for full
+detail): native no-git install flow, mcpo bridge (incl.
 `mcp<2` pin), isolation model, `write_note`/`search_notes`/`delete_note` over
 HTTP, the memnote skill followed correctly by a fresh Claude subagent,
 opencode's stdio MCP connection; the full Docker install flow against a
 git-tracked vault including a real `git push` to a disposable GitHub repo;
-Claude Code end to end via a genuinely fresh `claude -p` process; and Open
-WebUI's tool-server connectivity against an isolated throwaway instance.
+Claude Code end to end via a genuinely fresh `claude -p` process; and, as of
+2026-08-02, the full Docker-path client integration for Claude Code, Zed (via
+ACP with Claude Code as the backing agent), and Open WebUI - a real chat in
+each client actually writing a correctly-schemed note to the bind-mounted
+vault, not just connectivity. See `DESIGN.md` §5 for the Open WebUI gotchas
+that testing surfaced (tool-server URL, per-chat activation, built-in Notes
+collision).
 
 Everything below is left because it's GUI-only with no CLI/API escape hatch,
 or needs infrastructure only you have access to. Each section is
@@ -43,57 +48,48 @@ rm -rf ~/vaults/test-desktop
 Then remove the `test-desktop` entry from `claude_desktop_config.json` and
 quit/reopen Claude Desktop again.
 
-## 2. Zed
+## 2. Zed's native agent panel (not ACP)
+
+Only the ACP path (Zed driving Claude Code as the backing agent) has been
+verified (2026-08-02, Docker-backed vault) - that path reads Claude Code's
+own project config (`.claude/skills/`, `claude mcp add-json --scope local`)
+directly, so it's already covered by the Claude Code checks elsewhere. Zed's
+*native* agent panel - its own model provider, its own "context servers" MCP
+config, its own separate Skills store - is a different code path and remains
+unverified.
 
 ```bash
-mkdir -p ~/vaults/test-zed && cd ~/vaults/test-zed
+mkdir -p ~/vaults/test-zed-native && cd ~/vaults/test-zed-native
 gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault-infra/contents/install.sh \
-  | bash -s -- test-zed
-zed ~/vaults/test-zed
+  /repos/ivan-avramov/memvault-infra/contents/install-docker.sh \
+  | bash -s -- test-zed-native
+zed ~/vaults/test-zed-native
 ```
 
-1. Command palette (Cmd+Shift+P) -> `agent: create skill from url`, paste:
-   `https://raw.githubusercontent.com/ivan-avramov/memvault-infra/main/skills/memnote/SKILL.md`.
-   Confirm it appears in Zed's skills list.
+1. Command palette (Cmd+Shift+P) -> `agent: create skill from url`. Expect
+   this specific flow to fail either way against this private repo: a
+   `raw.githubusercontent.com` URL 404s unauthenticated, and Zed rejects
+   `file://` URLs outright ("github urls must be https://" - confirmed
+   2026-08-02). The only working import path found so far is pasting the
+   skill's frontmatter (`name`/`description` into their own fields) and body
+   by hand into Zed's create-skill dialog. Leave "disable model invocation"
+   **off** - the skill needs to apply automatically, not only via a manual
+   slash command.
 2. In Zed's agent panel settings, add an MCP context server using the
-   command/args/env block from `~/vaults/test-zed/INTEGRATIONS.md`.
-3. In the agent panel, ask it to write a note about something real. Check
-   that the skill was actually *applied* (correct schema in the resulting
-   file) - not just that it's listed as installed. These are different
-   things; the Claude Code test caught exactly this gap once already.
+   command/args/env block from `~/vaults/test-zed-native/INTEGRATIONS.md`.
+3. Switch the agent panel to Zed's own native agent (not Claude Code/ACP),
+   ask it to write a note about something real. Check that the skill was
+   actually *applied* (correct schema in the resulting file) - not just that
+   it's listed as installed.
 
 Teardown: remove the skill and the MCP context server from Zed's settings,
 then:
 ```bash
-memvaultctl uninstall test-zed
-rm -rf ~/vaults/test-zed
+memvaultctl uninstall test-zed-native
+rm -rf ~/vaults/test-zed-native
 ```
 
-## 3. Open WebUI: the GUI-only remainder
-
-Tool-server connectivity is already verified server-side. This is just the
-UI steps that connectivity check couldn't reach. Use your existing running
-instance (`http://localhost:3000`) and either `mvtest` or a fresh vault -
-your call, doesn't need to be a throwaway.
-
-1. Admin Settings -> Tools -> add a tool server. URL:
-   `http://host.docker.internal:<mcpo-port>/<vault-name>` (check the port
-   with `memvaultctl status <vault-name>` or `docker port` if it's a Docker
-   vault). `host.docker.internal` is required, not `127.0.0.1` - that's how
-   OWUI's own container reaches a port running on the host.
-2. Workspace -> Skills -> new skill -> paste the contents of
-   `skills/memnote/SKILL.md` -> save.
-3. New chat, enable both the tool server and the skill for whatever model
-   you're using, ask it to write a note about something real.
-4. Open the resulting file on disk and check the schema was actually
-   applied, not just that the tool call succeeded.
-
-Teardown: remove the tool server and the skill from OWUI's settings; if you
-used a real vault, delete the test note (`delete_note` via the tool, or just
-remove the file and let the vault's watcher/sync catch up).
-
-## 4. opencode full agentic run
+## 3. opencode full agentic run
 
 Connectivity is already verified. This is blocked on a mismatch between the
 model IDs in `~/.config/opencode/opencode.json` and what `mlx-serve` is
@@ -129,7 +125,7 @@ memvaultctl uninstall test-opencode
 rm -rf ~/vaults/test-opencode
 ```
 
-## 5. Native install.sh: nested-in-parent-repo path
+## 4. Native install.sh: nested-in-parent-repo path
 
 This is the one case install.sh was specifically rewritten to handle
 correctly (pathspec-scoped commits, so the watcher never touches unrelated
@@ -168,7 +164,7 @@ memvaultctl uninstall nested-test
 rm -rf ~/parent-repo-test
 ```
 
-## 6. Docker path: Linux as the host
+## 5. Docker path: Linux as the host
 
 Needs an actual Linux machine or VM with Docker - a cloud instance, or a
 local VM (UTM/Multipass/Lima). On it:

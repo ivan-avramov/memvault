@@ -176,15 +176,32 @@ installed and loads automatically.
 
 ## Zed
 
-Command palette -> \`agent: create skill from url\`, pointing at the raw
-GitHub URL of \`skills/memnote/SKILL.md\` in the memvault-infra repo. Add an
-MCP context server with the same command/args/env block above.
+Command palette -> \`agent: create skill from url\`, pointing at the copy
+already installed in this vault - **not** a raw.githubusercontent.com URL:
+Zed's URL import has no GitHub auth of its own, so it 404s against a private
+memvault-infra repo (or a fork someone forgot to make public). The file was
+already fetched via an authenticated \`gh repo clone\`, so just point at it
+locally:
+
+file://$VAULT_DIR/.claude/skills/memnote/SKILL.md
+
+Add an MCP context server with the same command/args/env block above.
 
 ## Open WebUI (via mcpo, already running in the container)
 
 Tool server URL: \`http://127.0.0.1:$PORT/$VAULT_NAME\` (re-check the port
-after any container restart). Paste \`skills/memnote/SKILL.md\` into OWUI's
-Skills workspace as a custom skill.
+after any container restart) - use this host-resolvable URL, not
+\`host.docker.internal\`: OWUI's tool-server calls are made client-side, from
+your browser, not proxied through its backend container, so
+\`host.docker.internal\` (container-only) silently fails there even though
+OWUI's backend could reach it fine. Paste \`skills/memnote/SKILL.md\` into
+OWUI's Skills workspace as a custom skill.
+
+Both the tool server and the skill are disabled by default - toggle them on
+per-chat, or attach them to the model in Workspace -> Models, before testing.
+If you skip that, OWUI's own built-in Notes feature will silently answer
+instead: same-looking \`write_note\`/\`search_notes\` names, but the result
+won't match this skill's schema (e.g. no \`date\` field).
 
 ## Isolation reminder
 
