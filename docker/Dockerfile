@@ -10,7 +10,8 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
 
 RUN uv tool install basic-memory \
-    && uv tool install mcpo --with "mcp<2"
+    && uv tool install mcpo --with "mcp<2" \
+    && uv cache clean
 ENV PATH="/root/.local/bin:$PATH"
 
 COPY scripts/watch-commit.sh scripts/push-timer.sh /opt/memvault/scripts/
