@@ -75,6 +75,18 @@ memvaultctl uninstall <vault>                     # stop + remove services/confi
                                                    # leaves the vault directory and git repo alone
 ```
 
+## Resource usage
+
+Measured on the Docker path (2026-08-02): idle CPU sits around ~1.5% of one
+core per vault, with zero measured `/proc` CPU ticks from the file watcher
+itself while idle - `fswatch -o | while read` blocks on a kernel FSEvents
+pipe, it isn't polling. A real file write gets committed within the same
+second, too briefly to even show as a spike. The ~1.5% baseline is just
+`mcpo`/`basic-memory`'s Python/asyncio processes being alive, not vault
+activity - negligible on any modern multi-core machine. The push timer
+(`sleep 300` loop, no-ops if no git remote is configured) adds nothing
+between wakeups.
+
 ## Connecting a client
 
 Each vault's install writes `INTEGRATIONS.md` **into that vault's directory**
