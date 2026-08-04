@@ -2,11 +2,11 @@
 # Manage per-vault backends (native launchd services, or a Docker container)
 # without hand-typing launchctl/docker commands and paths. Auto-detects which
 # backend a given vault uses. Install once as `memvaultctl`:
-#   ln -sf ~/.memvault-infra/repo/scripts/memvaultctl.sh /opt/homebrew/bin/memvaultctl
+#   ln -sf ~/.memvault/repo/scripts/memvaultctl.sh /opt/homebrew/bin/memvaultctl
 set -euo pipefail
 
 PLIST_DIR="$HOME/Library/LaunchAgents"
-LOG_DIR_ROOT="$HOME/.memvault-infra/logs"
+LOG_DIR_ROOT="$HOME/.memvault/logs"
 SERVICES=(mcpo watch push)
 
 usage() {
@@ -29,8 +29,8 @@ EOF
   exit 1
 }
 
-plist_path() { echo "$PLIST_DIR/com.memvault-infra.$1.$2.plist"; }
-label() { echo "com.memvault-infra.$1.$2"; }
+plist_path() { echo "$PLIST_DIR/com.memvault.$1.$2.plist"; }
+label() { echo "com.memvault.$1.$2"; }
 container_name() { echo "memvault-$1"; }
 
 backend_of() {
@@ -53,9 +53,9 @@ installed_services() {
 
 all_vaults() {
   local f
-  for f in "$PLIST_DIR"/com.memvault-infra.*.mcpo.plist; do
+  for f in "$PLIST_DIR"/com.memvault.*.mcpo.plist; do
     [[ -e "$f" ]] || continue
-    basename "$f" .mcpo.plist | sed 's/^com\.memvault-infra\.//'
+    basename "$f" .mcpo.plist | sed 's/^com\.memvault\.//'
   done
   if command -v docker >/dev/null 2>&1; then
     docker ps -a --filter "name=^memvault-" --format '{{.Names}}' 2>/dev/null | sed 's/^memvault-//'
@@ -153,13 +153,13 @@ cmd_uninstall() {
     native)
       cmd_stop "$vault"
       for s in "${SERVICES[@]}"; do rm -f "$(plist_path "$vault" "$s")"; done
-      rm -rf "$HOME/.memvault-infra/config/$vault" "$LOG_DIR_ROOT/$vault"
-      local ports="$HOME/.memvault-infra/ports.txt"
+      rm -rf "$HOME/.memvault/config/$vault" "$LOG_DIR_ROOT/$vault"
+      local ports="$HOME/.memvault/ports.txt"
       [[ -f "$ports" ]] && grep -v "^$vault " "$ports" > "$ports.tmp" && mv -f "$ports.tmp" "$ports"
       ;;
     docker)
       docker rm -f "$(container_name "$vault")" >/dev/null
-      rm -rf "$HOME/.memvault-infra/config/$vault"
+      rm -rf "$HOME/.memvault/config/$vault"
       ;;
     none) echo "vault '$vault' not found" >&2; exit 1 ;;
   esac

@@ -1,4 +1,4 @@
-# memvault-infra
+# memvault
 
 Tooling for the local-execution knowledge vault design in [`DESIGN.md`](DESIGN.md)
 (read that for the *why*; this file is just setup instructions). This repo holds
@@ -26,7 +26,7 @@ and Docker (Desktop or OrbStack) running.
 ```bash
 mkdir -p ~/vaults/personal-vault && cd ~/vaults/personal-vault
 gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault-infra/contents/install-docker.sh \
+  /repos/ivan-avramov/memvault/contents/install-docker.sh \
   | bash -s -- personal-vault
 ```
 
@@ -35,7 +35,7 @@ folder, an existing git repo, or a folder nested inside a larger repo are all
 fine. The last argument is the vault name; omit it to use the directory name.
 Run it again for each additional vault (in that vault's own directory).
 
-This builds the `memvault-infra:local` image (once - cached after) and starts one
+This builds the `memvault:local` image (once - cached after) and starts one
 container per vault, with the vault directory bind-mounted in. If the directory
 is git-tracked, a commit watcher and push timer run inside the container too;
 otherwise they're skipped. Re-running for the same vault is safe - it rebuilds
@@ -49,7 +49,7 @@ automatically if missing (via Homebrew for `fswatch`).
 ```bash
 mkdir -p ~/vaults/personal-vault && cd ~/vaults/personal-vault
 gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault-infra/contents/install.sh \
+  /repos/ivan-avramov/memvault/contents/install.sh \
   | bash -s -- personal-vault
 ```
 
@@ -59,8 +59,8 @@ This installs `basic-memory`/`mcpo` via `uv tool install` and registers
 git-tracked) instead of starting a container. Re-running is safe/idempotent.
 
 Both installers use `gh api` (not a public raw URL) so this works against a
-private `memvault-infra` fork too. Override the source repo with
-`MEMVAULT_INFRA_REPO=<owner>/<repo>` if you're running your own fork.
+private `memvault` fork too. Override the source repo with
+`MEMVAULT_REPO=<owner>/<repo>` if you're running your own fork.
 
 ## Managing a vault
 

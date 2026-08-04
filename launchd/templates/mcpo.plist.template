@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.memvault-infra.__VAULT_NAME__.mcpo</string>
+  <string>com.memvault.__VAULT_NAME__.mcpo</string>
   <key>ProgramArguments</key>
   <array>
     <string>__UVX_PATH__</string>

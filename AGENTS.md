@@ -1,4 +1,4 @@
-# memvault-infra
+# memvault
 
 Local-execution tooling for the MemVault knowledge-vault design (`DESIGN.md` has
 the what/why; this file is how-to-work-in-this-repo only).

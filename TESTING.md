@@ -23,7 +23,7 @@ copy-pasteable as written except for placeholders in `<angle brackets>`.
 ```bash
 mkdir -p ~/vaults/test-desktop && cd ~/vaults/test-desktop
 gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault-infra/contents/install.sh \
+  /repos/ivan-avramov/memvault/contents/install.sh \
   | bash -s -- test-desktop
 ```
 
@@ -61,7 +61,7 @@ unverified.
 ```bash
 mkdir -p ~/vaults/test-zed-native && cd ~/vaults/test-zed-native
 gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault-infra/contents/install-docker.sh \
+  /repos/ivan-avramov/memvault/contents/install-docker.sh \
   | bash -s -- test-zed-native
 zed ~/vaults/test-zed-native
 ```
@@ -102,7 +102,7 @@ declared there).
 ```bash
 mkdir -p ~/vaults/test-opencode && cd ~/vaults/test-opencode
 gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault-infra/contents/install.sh \
+  /repos/ivan-avramov/memvault/contents/install.sh \
   | bash -s -- test-opencode
 cp .claude/skills/memnote/SKILL.md AGENTS.md   # opencode doesn't read SKILL.md
 ```
@@ -141,11 +141,11 @@ echo "uncommitted change - should stay untouched" >> unrelated.txt
 
 mkdir vault-subdir && cd vault-subdir
 gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault-infra/contents/install.sh \
+  /repos/ivan-avramov/memvault/contents/install.sh \
   | bash -s -- nested-test
 ```
 
-1. `launchctl list | grep memvault-infra` - confirm three services
+1. `launchctl list | grep memvault` - confirm three services
    (`mcpo`, `watch`, `push`) got installed for `nested-test`, not just one.
 2. `echo "test" > vault-subdir/note.md`, wait ~3 seconds.
 3. From `~/parent-repo-test` (the parent root, not the subdir):
@@ -173,7 +173,7 @@ local VM (UTM/Multipass/Lima). On it:
 gh auth login   # needs its own auth on that machine
 mkdir -p ~/vaults/linux-test && cd ~/vaults/linux-test
 gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault-infra/contents/install-docker.sh \
+  /repos/ivan-avramov/memvault/contents/install-docker.sh \
   | bash -s -- linux-test
 ```
 
@@ -194,4 +194,4 @@ edit). Specifically worth comparing against the macOS results:
 
 Teardown: `memvaultctl uninstall linux-test` (if `memvaultctl` got
 symlinked there) or manually `docker rm -f memvault-linux-test` plus
-`rm -rf ~/.memvault-infra/config/linux-test`.
+`rm -rf ~/.memvault/config/linux-test`.

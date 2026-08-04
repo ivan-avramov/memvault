@@ -46,7 +46,7 @@ Memory's project registry is normally a single shared list across everything on 
 machine. Real isolation comes from `BASIC_MEMORY_CONFIG_DIR`, which relocates the
 entire config/index for a process, not just which project is "current" — without it,
 a client on one vault could still call `list_memory_projects` and see the other
-vault's name and path. `memvault-infra` gives every vault its own value for this.
+vault's name and path. `memvault` gives every vault its own value for this.
 Client sessions can still be *configured* to point at both vaults at once regardless
 of server-side isolation — that's a client-discipline question, documented per-vault
 in each vault's generated `INTEGRATIONS.md`, not something enforced by the infra.
@@ -92,7 +92,7 @@ in each vault's generated `INTEGRATIONS.md`, not something enforced by the infra
     a long-term arrangement rather than a trial.
   - **OPEN: no documented conflict resolution** for simultaneous local + cloud edits.
     Discipline until resolved: don't route a project through `bm cloud` while also
-    running `memvault-infra`'s own git watcher against the same directory — that's two
+    running `memvault`'s own git watcher against the same directory — that's two
     independent, uncoordinated sync mechanisms on one directory, the same two-writer
     risk the deferred self-hosted plan below was already careful about, just via
     `bm cloud push/pull` instead of raw git.
@@ -157,11 +157,11 @@ in each vault's generated `INTEGRATIONS.md`, not something enforced by the infra
 - **Official skill package exists but isn't used as-is.** Checked directly: it does
   **not** instruct the agent to check existing tags/relations before minting new ones
   — it explicitly favors free-form vocabulary ("no fixed list, use whatever's
-  descriptive"). `memvault-infra` ships its own skill (`memnote`, below) instead of
+  descriptive"). `memvault` ships its own skill (`memnote`, below) instead of
   forking or extending the official one.
 
 ### The `memnote` skill
-Lives at `skills/memnote/SKILL.md` in `memvault-infra`, copied into
+Lives at `skills/memnote/SKILL.md` in `memvault`, copied into
 `.claude/skills/memnote/` on every vault by the installer, and portable to every
 other client without format conversion: Zed imports it directly by URL
 (`agent: create skill from url` in the command palette), pointed at the local
@@ -255,7 +255,7 @@ drift cleanup is a defragmentation pass, not something prevented at write time.
   ContextForge** — ContextForge's value (OAuth, virtual-server scoping) doesn't apply
   to a single local user with no network exposure; mcpo is OWUI's own purpose-built
   stdio→OpenAPI proxy for exactly this case. Confirmed end-to-end, including that
-  OWUI's backend can actually reach and correctly parse a `memvault-infra` mcpo
+  OWUI's backend can actually reach and correctly parse a `memvault` mcpo
   bridge's OpenAPI spec via `host.docker.internal` when OWUI itself runs in Docker.
   - **Known, currently-open upstream bug, not ours to fix**: mcpo 0.0.20 (latest at
     time of writing) crash-loops against `mcp>=2.0` (a Python SDK rewrite that
@@ -265,7 +265,7 @@ drift cleanup is a defragmentation pass, not something prevented at write time.
     documented recommendation for anyone not ready to migrate, not a workaround
     invented here. Revisit the pin once mcpo ships a compatible release.
 
-## 5. Deployment: `memvault-infra`
+## 5. Deployment: `memvault`
 
 Separate repo, not vault content — install script(s), the `memnote` skill, and the
 background services that wire a vault directory up to Basic Memory. Vault content

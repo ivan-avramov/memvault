@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.memvault-infra.__VAULT_NAME__.watch</string>
+  <string>com.memvault.__VAULT_NAME__.watch</string>
   <key>ProgramArguments</key>
   <array>
     <string>__INFRA_DIR__/scripts/watch-commit.sh</string>
