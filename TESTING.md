@@ -21,10 +21,13 @@ copy-pasteable as written except for placeholders in `<angle brackets>`.
 ## 1. Claude Desktop
 
 ```bash
-mkdir -p ~/vaults/test-desktop && cd ~/vaults/test-desktop
+# system install, skip if already done on this machine
 gh api -H "Accept: application/vnd.github.raw" \
   /repos/ivan-avramov/memvault/contents/install.sh \
-  | bash -s -- test-desktop
+  | bash
+
+mkdir -p ~/vaults/test-desktop && cd ~/vaults/test-desktop
+memvaultctl create test-desktop
 ```
 
 1. Open `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -59,10 +62,13 @@ config, its own separate Skills store - is a different code path and remains
 unverified.
 
 ```bash
-mkdir -p ~/vaults/test-zed-native && cd ~/vaults/test-zed-native
+# system install, skip if already done on this machine
 gh api -H "Accept: application/vnd.github.raw" \
   /repos/ivan-avramov/memvault/contents/install-docker.sh \
-  | bash -s -- test-zed-native
+  | bash
+
+mkdir -p ~/vaults/test-zed-native && cd ~/vaults/test-zed-native
+memvaultctl create test-zed-native
 zed ~/vaults/test-zed-native
 ```
 
@@ -100,10 +106,13 @@ in `opencode.json` to match, or point `-m` at a model that's already
 declared there).
 
 ```bash
-mkdir -p ~/vaults/test-opencode && cd ~/vaults/test-opencode
+# system install, skip if already done on this machine
 gh api -H "Accept: application/vnd.github.raw" \
   /repos/ivan-avramov/memvault/contents/install.sh \
-  | bash -s -- test-opencode
+  | bash
+
+mkdir -p ~/vaults/test-opencode && cd ~/vaults/test-opencode
+memvaultctl create test-opencode
 cp .claude/skills/memnote/SKILL.md AGENTS.md   # opencode doesn't read SKILL.md
 ```
 
@@ -125,14 +134,19 @@ memvaultctl uninstall test-opencode
 rm -rf ~/vaults/test-opencode
 ```
 
-## 4. Native install.sh: nested-in-parent-repo path
+## 4. Native `memvaultctl create`: nested-in-parent-repo path
 
-This is the one case install.sh was specifically rewritten to handle
+This is the one case `memvaultctl create` was specifically written to handle
 correctly (pathspec-scoped commits, so the watcher never touches unrelated
 files elsewhere in a larger repo) - worth proving, not just trusting the
 diff.
 
 ```bash
+# system install, skip if already done on this machine
+gh api -H "Accept: application/vnd.github.raw" \
+  /repos/ivan-avramov/memvault/contents/install.sh \
+  | bash
+
 mkdir -p ~/parent-repo-test && cd ~/parent-repo-test
 git init -q
 echo "pre-existing file" > unrelated.txt
@@ -140,9 +154,7 @@ git add unrelated.txt && git commit -q -m "initial"
 echo "uncommitted change - should stay untouched" >> unrelated.txt
 
 mkdir vault-subdir && cd vault-subdir
-gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault/contents/install.sh \
-  | bash -s -- nested-test
+memvaultctl create nested-test
 ```
 
 1. `launchctl list | grep memvault` - confirm three services
@@ -171,10 +183,12 @@ local VM (UTM/Multipass/Lima). On it:
 
 ```bash
 gh auth login   # needs its own auth on that machine
-mkdir -p ~/vaults/linux-test && cd ~/vaults/linux-test
 gh api -H "Accept: application/vnd.github.raw" \
   /repos/ivan-avramov/memvault/contents/install-docker.sh \
-  | bash -s -- linux-test
+  | bash
+
+mkdir -p ~/vaults/linux-test && cd ~/vaults/linux-test
+memvaultctl create linux-test
 ```
 
 Run through the same checks as the macOS Docker smoke test (mcpo reachable,
@@ -192,6 +206,7 @@ edit). Specifically worth comparing against the macOS results:
   surprise (e.g. the container's root user unable to write to the mounted
   vault directory depending on host directory ownership).
 
-Teardown: `memvaultctl uninstall linux-test` (if `memvaultctl` got
-symlinked there) or manually `docker rm -f memvault-linux-test` plus
-`rm -rf ~/.memvault/config/linux-test`.
+Teardown: `memvaultctl uninstall linux-test` (or, if `memvaultctl` didn't
+land on PATH, `bash ~/.memvault/repo/scripts/memvaultctl.sh uninstall
+linux-test`) - this also removes the `linux-test` lines from
+`~/.memvault/ports.txt`/`vaults.txt`.

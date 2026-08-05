@@ -3,16 +3,46 @@
 Local-execution tooling for the MemVault knowledge-vault design (`DESIGN.md` has
 the what/why; this file is how-to-work-in-this-repo only).
 
+## Two-step install model
+
+Installing the tool and provisioning a vault are separate, deliberate steps:
+
+1. **System install, once per machine, not tied to any vault**: `install.sh`
+   (native - uv tool installs + macOS launchd) or `install-docker.sh` (builds
+   the image, cross-platform). Both clone/update `~/.memvault/repo`, put
+   `memvaultctl` on PATH, and record the choice in `~/.memvault/backend`
+   (`native` or `docker`) - no vault directory, no vault name, no network
+   dependency after this point. **Backend is a whole-machine choice, not a
+   per-vault one** - every vault created afterward uses whatever's in that
+   file; there's no way to mix native and Docker vaults on the same machine
+   by passing a flag. Re-running the other installer switches it going
+   forward (existing vaults keep running on whatever backend they were
+   created with).
+2. **Vault provisioning, repeatable, one per folder**: `cd` into the folder
+   you want as a vault, then `memvaultctl create <name> [--port N]`. This is
+   where the skill file gets copied, `.gitignore` gets its entries, the port
+   gets assigned and persisted, and the container/launchd services get
+   started.
+
+Upgrading the tool itself is `memvaultctl upgrade` (global - pulls the repo,
+rebuilds the image / upgrades the uv tools, does not touch any running
+vault). Applying that upgrade to a given vault is the separate `memvaultctl
+restart <name>`, which recreates the container (or reloads the launchd
+services) against whatever was just built. Nothing lives in the vault
+directory itself except vault content (skill copy, `INTEGRATIONS.md`,
+notes) - no generated per-vault control script.
+
 ## What's here
 
-- `install.sh` - native install (uv tool installs + macOS launchd services).
-- `install-docker.sh` - Docker install (one container per vault, cross-platform).
+- `install.sh` / `install-docker.sh` - system installers, see above.
 - `skills/memnote/SKILL.md` - the note-writing skill, shared verbatim across every
   client (Claude Code, Zed, Open WebUI, opencode-as-`AGENTS.md`).
-- `scripts/watch-commit.sh` / `push-timer.sh` - shared by both install paths and by
+- `scripts/watch-commit.sh` / `push-timer.sh` - shared by both backends and by
   the Docker entrypoint. One implementation, not duplicated per path.
-- `scripts/memvaultctl.sh` - management CLI, auto-detects native vs. Docker backend
-  per vault.
+- `scripts/memvaultctl.sh` - the one control surface: `create`, `upgrade`,
+  `status`/`start`/`stop`/`restart`/`logs`/`uninstall`. Auto-detects native vs.
+  Docker backend per vault. Owns the `~/.memvault/ports.txt` (stable per-vault
+  port) and `~/.memvault/vaults.txt` (name -> backend/dir) registries.
 - `docker/` - Dockerfile + entrypoint for the Docker path.
 - `TESTING.md` - what's verified vs. still needs a human, with exact steps.
 
@@ -25,10 +55,13 @@ the what/why; this file is how-to-work-in-this-repo only).
   silently no-op'd once already because the invoking shell had them aliased to
   `-i`, and the non-interactive overwrite prompt defaulted to no with no error.
   Don't reintroduce it.
-- **Both install paths must stay behaviorally consistent.** A change to the skill
-  schema, the isolation model, or the watch/push behavior applies to both
-  `install.sh` and `install-docker.sh` - check both before considering a change
-  done.
+- **Both backends must stay behaviorally consistent.** A change to the skill
+  schema, the isolation model, or the watch/push behavior applies to both the
+  native and Docker branches of `memvaultctl create` - check both before
+  considering a change done. The Docker container-run logic (bind mounts, SSH/
+  gitconfig mounting) lives in exactly one place, `docker_start_vault` in
+  `scripts/memvaultctl.sh`, shared by `create`/`start`/`restart` - don't
+  reintroduce a second copy of it.
 - **Claude Code MCP registration is `claude mcp add-json ... --scope local`,
   never a hand-edited `.mcp.json`.** Project-scoped `.mcp.json` servers need an
   approval step Claude Code doesn't surface clearly - from inside a session,
