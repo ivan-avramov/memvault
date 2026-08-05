@@ -6,61 +6,74 @@ no vault content itself - it's the installer, the shared `memnote` note-writing
 skill, and the background services that wire a vault directory up to
 [Basic Memory](https://github.com/basicmachines-co/basic-memory), `mcpo`, and git.
 
-Vault content (work vault, personal vault, ...) lives in separate directories -
-you run an installer *inside* whichever directory you want to become a vault, one
-run per vault. This repo never creates or pre-populates those directories.
+Vault content (work vault, personal vault, ...) lives in separate directories.
+Installing memvault itself and provisioning a vault are two separate steps:
+install once per machine (below), then create a vault with `memvaultctl
+create <name>` from inside whichever directory you want to become that vault
+- one `create` per vault, this repo never creates or pre-populates those
+directories.
 
-There are two install paths, same end result. **Docker is recommended** -
+There are two backends, same end result. **Docker is recommended** -
 cross-platform, and it only touches a container plus the directories you mount
 in. Native only works on macOS and installs tools/services onto the host
-directly; use it if you specifically want zero container overhead.
+directly; use it if you specifically want zero container overhead. The
+backend is a one-time, whole-machine choice made by whichever installer you
+run below - it's not something you pick per vault.
 
-Both paths are managed afterward the same way, via `memvaultctl`, and both write
-a per-vault `INTEGRATIONS.md` with copy-pasteable client config.
+Both backends are managed afterward the same way, via `memvaultctl`, and both
+write a per-vault `INTEGRATIONS.md` with copy-pasteable client config.
 
 ## Install with Docker (recommended)
 
-Prerequisites: [`gh`](https://cli.github.com) (authenticated - `gh auth login`)
-and Docker (Desktop or OrbStack) running.
+Prerequisite: Docker (Desktop or OrbStack) running.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install-docker.sh \
+  | bash
+```
+
+This clones the repo to `~/.memvault/repo`, builds the `memvault:local` image,
+and puts `memvaultctl` on your `PATH`. Run it once per machine - it's not tied
+to any vault. Then, for each vault:
 
 ```bash
 mkdir -p ~/vaults/personal-vault && cd ~/vaults/personal-vault
-gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault/contents/install-docker.sh \
-  | bash -s -- personal-vault
+memvaultctl create personal-vault
 ```
 
-Run this from inside the directory you want to become the vault - a fresh empty
-folder, an existing git repo, or a folder nested inside a larger repo are all
-fine. The last argument is the vault name; omit it to use the directory name.
-Run it again for each additional vault (in that vault's own directory).
-
-This builds the `memvault:local` image (once - cached after) and starts one
-container per vault, with the vault directory bind-mounted in. If the directory
-is git-tracked, a commit watcher and push timer run inside the container too;
-otherwise they're skipped. Re-running for the same vault is safe - it rebuilds
-the image if needed and replaces the container.
+Run `create` from inside the directory you want to become the vault - a fresh
+empty folder, an existing git repo, or a folder nested inside a larger repo
+are all fine; the name defaults to the directory name if omitted. This starts
+one container per vault, with the vault directory bind-mounted in. If the
+directory is git-tracked, a commit watcher and push timer run inside the
+container too; otherwise they're skipped.
 
 ## Install natively (macOS only)
 
-Prerequisites: `gh` (authenticated). `uv` and `fswatch` are installed
-automatically if missing (via Homebrew for `fswatch`).
+Prerequisite: none beyond `bash`/`curl`/`git` - `uv` and `fswatch` are
+installed automatically if missing (via Homebrew for `fswatch`).
 
 ```bash
-mkdir -p ~/vaults/personal-vault && cd ~/vaults/personal-vault
-gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault/contents/install.sh \
-  | bash -s -- personal-vault
+curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install.sh \
+  | bash
 ```
 
-Same usage as the Docker path (run per vault, from inside the vault directory).
-This installs `basic-memory`/`mcpo` via `uv tool install` and registers
-`launchd` LaunchAgents (`mcpo` always; `watch`/`push` only if the directory is
-git-tracked) instead of starting a container. Re-running is safe/idempotent.
+Same two-step usage as the Docker path: this installs `basic-memory`/`mcpo`
+via `uv tool install` and puts `memvaultctl` on your `PATH`, once per machine.
+Then `cd` into each vault's directory and run `memvaultctl create <name>`,
+which registers `launchd` LaunchAgents (`mcpo` always; `watch`/`push` only if
+the directory is git-tracked) instead of starting a container.
 
-Both installers use `gh api` (not a public raw URL) so this works against a
-private `memvault` fork too. Override the source repo with
+Override the source repo for either installer with
 `MEMVAULT_REPO=<owner>/<repo>` if you're running your own fork.
+
+## Upgrading
+
+`memvaultctl upgrade` pulls the repo and rebuilds the image / upgrades the uv
+tools - once, for the whole machine, not any particular vault. It never
+restarts a running vault; apply the upgrade to a given vault explicitly with
+`memvaultctl restart <name>`, which recreates the container (or reloads the
+native services) against whatever was just built.
 
 ## Managing a vault
 

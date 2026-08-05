@@ -6,15 +6,14 @@
 #
 # Usage (run once per machine, from anywhere):
 #
-#   gh api -H "Accept: application/vnd.github.raw" \
-#     /repos/ivan-avramov/memvault/contents/install-docker.sh \
+#   curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install-docker.sh \
 #     | bash
 #
 # After this, create vaults with `memvaultctl create <name>` from inside
 # whatever directory you want to become a vault. Re-run this same command
 # later to pull a newer memvault release from scratch, but day to day prefer
-# `memvaultctl upgrade` instead - same pull-and-rebuild, no `gh`/network
-# dependency once this has run once.
+# `memvaultctl upgrade` instead - same pull-and-rebuild, no network
+# dependency beyond git once this has run once.
 set -euo pipefail
 
 REPO_SLUG="${MEMVAULT_REPO:-ivan-avramov/memvault}"
@@ -24,14 +23,6 @@ INFRA_DIR="$INFRA_HOME/repo"
 log() { printf '\n==> %s\n' "$1"; }
 
 # --- 0. sanity ---------------------------------------------------------
-if ! command -v gh >/dev/null 2>&1; then
-  echo "gh CLI not found - install it (https://cli.github.com) and 'gh auth login', then re-run." >&2
-  exit 1
-fi
-if ! gh auth status >/dev/null 2>&1; then
-  echo "gh CLI is installed but not authenticated - run 'gh auth login', then re-run." >&2
-  exit 1
-fi
 if ! command -v docker >/dev/null 2>&1; then
   echo "docker not found - install Docker Desktop or OrbStack, then re-run." >&2
   exit 1
@@ -50,7 +41,7 @@ if [[ -d "$INFRA_DIR/.git" ]]; then
   git -C "$INFRA_DIR" pull --quiet
 else
   log "Cloning memvault to $INFRA_DIR"
-  gh repo clone "$REPO_SLUG" "$INFRA_DIR" -- --quiet
+  git clone --quiet "https://github.com/$REPO_SLUG.git" "$INFRA_DIR"
 fi
 
 # --- 2. build the image ----------------------------------------------------

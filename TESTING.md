@@ -22,8 +22,7 @@ copy-pasteable as written except for placeholders in `<angle brackets>`.
 
 ```bash
 # system install, skip if already done on this machine
-gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault/contents/install.sh \
+curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install.sh \
   | bash
 
 mkdir -p ~/vaults/test-desktop && cd ~/vaults/test-desktop
@@ -63,8 +62,7 @@ unverified.
 
 ```bash
 # system install, skip if already done on this machine
-gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault/contents/install-docker.sh \
+curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install-docker.sh \
   | bash
 
 mkdir -p ~/vaults/test-zed-native && cd ~/vaults/test-zed-native
@@ -107,8 +105,7 @@ declared there).
 
 ```bash
 # system install, skip if already done on this machine
-gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault/contents/install.sh \
+curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install.sh \
   | bash
 
 mkdir -p ~/vaults/test-opencode && cd ~/vaults/test-opencode
@@ -143,8 +140,7 @@ diff.
 
 ```bash
 # system install, skip if already done on this machine
-gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault/contents/install.sh \
+curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install.sh \
   | bash
 
 mkdir -p ~/parent-repo-test && cd ~/parent-repo-test
@@ -182,9 +178,7 @@ Needs an actual Linux machine or VM with Docker - a cloud instance, or a
 local VM (UTM/Multipass/Lima). On it:
 
 ```bash
-gh auth login   # needs its own auth on that machine
-gh api -H "Accept: application/vnd.github.raw" \
-  /repos/ivan-avramov/memvault/contents/install-docker.sh \
+curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install-docker.sh \
   | bash
 
 mkdir -p ~/vaults/linux-test && cd ~/vaults/linux-test
