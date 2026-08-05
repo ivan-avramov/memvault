@@ -88,6 +88,22 @@ memvaultctl uninstall <vault>                     # stop + remove services/confi
                                                    # leaves the vault directory and git repo alone
 ```
 
+## Uninstalling everything
+
+`memvaultctl uninstall <vault>` only removes one vault. To remove memvault
+from the machine entirely - every registered vault, the `memvaultctl`
+symlink, `~/.memvault`, the per-user skill, and any `memvault:*` Docker
+images - use `uninstall.sh`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/uninstall.sh \
+  | bash
+```
+
+That's a dry run by default - it only prints what would be removed. Add
+`--yes` to actually remove it: `| bash -s -- --yes`. Vault directories and
+their git history are never touched, by this or by `memvaultctl uninstall`.
+
 ## Resource usage
 
 Measured on the Docker path (2026-08-02): idle CPU sits around ~1.5% of one
