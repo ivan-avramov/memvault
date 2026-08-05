@@ -285,7 +285,7 @@ Claude Code: register with
 \`claude mcp add-json $vault '{"command":"docker","args":["exec","-i","$cname","uvx","basic-memory","mcp"],"env":{"BASIC_MEMORY_MCP_PROJECT":"$vault"}}' --scope local\`
 (not a hand-edited \`.mcp.json\` - project-scoped servers there need an
 explicit approval step Claude Code doesn't surface clearly). Project-level
-\`.claude/skills/memnote/SKILL.md\` was already installed and loads
+\`.claude/skills/vnote/SKILL.md\` was already installed and loads
 automatically.
 
 ## Zed
@@ -295,7 +295,7 @@ already installed in this vault - **not** a raw.githubusercontent.com URL:
 Zed's URL import has no GitHub auth of its own, so it 404s against a private
 memvault repo. Point at the local copy instead:
 
-file://$vault_dir/.claude/skills/memnote/SKILL.md
+file://$vault_dir/.claude/skills/vnote/SKILL.md
 
 Add an MCP context server with the same command/args/env block above.
 
@@ -306,7 +306,7 @@ host-resolvable URL, not \`host.docker.internal\`: OWUI's tool-server calls
 are made client-side, from your browser, not proxied through its backend
 container, so \`host.docker.internal\` (container-only) silently fails there
 even though OWUI's backend could reach it fine. Paste
-\`skills/memnote/SKILL.md\` into OWUI's Skills workspace as a custom skill.
+\`skills/vnote/SKILL.md\` into OWUI's Skills workspace as a custom skill.
 
 Both the tool server and the skill are disabled by default - toggle them on
 per-chat, or attach them to the model in Workspace -> Models, before testing.
@@ -358,7 +358,7 @@ claude mcp add-json $vault '{"command": "$uvx_path", "args": ["basic-memory", "m
 \`\`\`
 
 Verify with \`claude mcp list\` (should show \`✔ Connected\`, not pending) before
-testing a write. The project-level \`.claude/skills/memnote/SKILL.md\`
+testing a write. The project-level \`.claude/skills/vnote/SKILL.md\`
 was already installed and loads automatically - skill loading and tool
 connection are independent, so seeing the skill in Claude's skill list does
 **not** mean the MCP server is connected.
@@ -398,7 +398,7 @@ already installed in this vault - **not** a raw.githubusercontent.com URL:
 Zed's URL import has no GitHub auth of its own, so it 404s against a private
 memvault repo. Point at the local copy instead:
 
-file://$vault_dir/.claude/skills/memnote/SKILL.md
+file://$vault_dir/.claude/skills/vnote/SKILL.md
 
 Add an MCP context server using the same command/args/env block above.
 
@@ -411,7 +411,7 @@ calls are made client-side, from your browser, not proxied through its
 backend container, so \`host.docker.internal\` (container-only) silently
 fails there even though OWUI's backend could reach it fine.
 Create a custom skill in OWUI's Skills workspace by pasting the contents of
-\`skills/memnote/SKILL.md\` from the memvault repo.
+\`skills/vnote/SKILL.md\` from the memvault repo.
 
 Both the tool server and the skill are disabled by default - toggle them on
 per-chat, or attach them to the model in Workspace -> Models, before testing.
@@ -615,8 +615,8 @@ cmd_create() {
   else
     log "No git repo detected - skipping .gitignore, commit watcher, and push timer"
   fi
-  mkdir -p "$vault_dir/.claude/skills/memnote"
-  cp -f "$INFRA_DIR/skills/memnote/SKILL.md" "$vault_dir/.claude/skills/memnote/SKILL.md"
+  mkdir -p "$vault_dir/.claude/skills/vnote"
+  cp -f "$INFRA_DIR/skills/vnote/SKILL.md" "$vault_dir/.claude/skills/vnote/SKILL.md"
 
   vaults_set "$vault" "$backend" "$vault_dir"
 

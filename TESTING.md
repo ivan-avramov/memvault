@@ -3,7 +3,7 @@
 Verified by Claude, doesn't need re-checking (see `DESIGN.md` §5 for full
 detail): native no-git install flow, mcpo bridge (incl.
 `mcp<2` pin), isolation model, `write_note`/`search_notes`/`delete_note` over
-HTTP, the memnote skill followed correctly by a fresh Claude subagent,
+HTTP, the vnote skill followed correctly by a fresh Claude subagent,
 opencode's stdio MCP connection; the full Docker install flow against a
 git-tracked vault including a real `git push` to a disposable GitHub repo;
 Claude Code end to end via a genuinely fresh `claude -p` process; and, as of
@@ -110,7 +110,7 @@ curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install.
 
 mkdir -p ~/vaults/test-opencode && cd ~/vaults/test-opencode
 memvaultctl create test-opencode
-cp .claude/skills/memnote/SKILL.md AGENTS.md   # opencode doesn't read SKILL.md
+cp .claude/skills/vnote/SKILL.md AGENTS.md   # opencode doesn't read SKILL.md
 ```
 
 Register the MCP server (opencode doesn't consume the same JSON shape as

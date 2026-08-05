@@ -157,12 +157,12 @@ in each vault's generated `INTEGRATIONS.md`, not something enforced by the infra
 - **Official skill package exists but isn't used as-is.** Checked directly: it does
   **not** instruct the agent to check existing tags/relations before minting new ones
   — it explicitly favors free-form vocabulary ("no fixed list, use whatever's
-  descriptive"). `memvault` ships its own skill (`memnote`, below) instead of
+  descriptive"). `memvault` ships its own skill (`vnote`, below) instead of
   forking or extending the official one.
 
-### The `memnote` skill
-Lives at `skills/memnote/SKILL.md` in `memvault`, copied into
-`.claude/skills/memnote/` on every vault by the installer, and portable to every
+### The `vnote` skill
+Lives at `skills/vnote/SKILL.md` in `memvault`, copied into
+`.claude/skills/vnote/` on every vault by the installer, and portable to every
 other client without format conversion: Zed imports it directly by URL
 (`agent: create skill from url` in the command palette), pointed at the local
 `file://` copy the installer already placed in the vault — **not** a
@@ -267,7 +267,7 @@ drift cleanup is a defragmentation pass, not something prevented at write time.
 
 ## 5. Deployment: `memvault`
 
-Separate repo, not vault content — install script(s), the `memnote` skill, and the
+Separate repo, not vault content — install script(s), the `vnote` skill, and the
 background services that wire a vault directory up to Basic Memory. Vault content
 repos (work, personal) are created on-demand by running an installer inside whatever
 directory the user wants each vault to live in; the infra repo never pre-creates them.
@@ -360,7 +360,7 @@ Linux as the Docker host (only tested via OrbStack on macOS so far).
    can ingest before summarization; reuse this, don't rebuild it).
 2. Model produces an initial summary; user interrogates/refines with the agent until
    satisfied.
-3. On deliberate commit (not automatic), the agent writes the note per the `memnote`
+3. On deliberate commit (not automatic), the agent writes the note per the `vnote`
    skill (§4) into `Sources/<slug>/`, plus the original source doc alongside it if one
    was dropped locally — reference only, never chunked or embedded into the semantic
    index (this falls out naturally: Basic Memory only indexes markdown, so a non-.md
@@ -375,7 +375,7 @@ Linux as the Docker host (only tested via OrbStack on macOS so far).
    35B *total* parameters regardless of the 3B *active* parameter count, but
    unnecessary once tagging/linking happens inline during authoring instead of as a
    background job).
-5. Vocabulary discipline lives in the `memnote` skill (§4), not in Basic Memory
+5. Vocabulary discipline lives in the `vnote` skill (§4), not in Basic Memory
    itself.
 
 ## 7. Explicitly out of scope for v1

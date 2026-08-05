@@ -2,7 +2,7 @@
 
 Tooling for the local-execution knowledge vault design in [`DESIGN.md`](DESIGN.md)
 (read that for the *why*; this file is just setup instructions). This repo holds
-no vault content itself - it's the installer, the shared `memnote` note-writing
+no vault content itself - it's the installer, the shared `vnote` note-writing
 skill, and the background services that wire a vault directory up to
 [Basic Memory](https://github.com/basicmachines-co/basic-memory), `mcpo`, and git.
 

@@ -75,7 +75,15 @@ if [[ "$LINKED" == "0" ]]; then
   echo "or invoke it directly: bash $INFRA_DIR/scripts/memvaultctl.sh <command>" >&2
 fi
 
-# --- 4. record the backend choice - one per machine, not per vault ---------
+# --- 4. per-user skill install - so it's loaded in every session, not just
+#        ones started from inside a vault directory. memvaultctl create still
+#        also installs a project-level copy (Zed/OpenCode need a real file in
+#        the vault directory; they have no per-user skill concept to use
+#        instead).
+mkdir -p "$HOME/.claude/skills/vnote"
+cp -f "$INFRA_DIR/skills/vnote/SKILL.md" "$HOME/.claude/skills/vnote/SKILL.md"
+
+# --- 5. record the backend choice - one per machine, not per vault ---------
 BACKEND_FILE="$INFRA_HOME/backend"
 if [[ -f "$BACKEND_FILE" && "$(cat "$BACKEND_FILE")" != "native" ]]; then
   log "Switching this machine's backend from $(cat "$BACKEND_FILE") to native - existing vaults keep working, new vaults will use native"

@@ -1,9 +1,9 @@
 ---
-name: memnote
+name: vnote
 description: Frontmatter schema, relation vocabulary, and provenance rules for writing knowledge-vault notes with Basic Memory. Use before write_note/edit_note.
 ---
 
-# Memory notes conventions
+# Vault note conventions
 
 ## Before writing
 

@@ -10,19 +10,29 @@ Installing the tool and provisioning a vault are separate, deliberate steps:
 1. **System install, once per machine, not tied to any vault**: `install.sh`
    (native - uv tool installs + macOS launchd) or `install-docker.sh` (builds
    the image, cross-platform). Both clone/update `~/.memvault/repo`, put
-   `memvaultctl` on PATH, and record the choice in `~/.memvault/backend`
-   (`native` or `docker`) - no vault directory, no vault name, no network
-   dependency after this point. **Backend is a whole-machine choice, not a
-   per-vault one** - every vault created afterward uses whatever's in that
-   file; there's no way to mix native and Docker vaults on the same machine
-   by passing a flag. Re-running the other installer switches it going
-   forward (existing vaults keep running on whatever backend they were
-   created with).
+   `memvaultctl` on PATH, install the `vnote` skill to `~/.claude/skills/`
+   (per-user, so it's loaded in every Claude Code session regardless of
+   which directory it's started from - not just ones started inside a
+   vault), and record the backend choice in `~/.memvault/backend` (`native`
+   or `docker`) - no vault directory, no vault name, no network dependency
+   after this point. **Backend is a whole-machine choice, not a per-vault
+   one** - every vault created afterward uses whatever's in that file;
+   there's no way to mix native and Docker vaults on the same machine by
+   passing a flag. Re-running the other installer switches it going forward
+   (existing vaults keep running on whatever backend they were created
+   with).
 2. **Vault provisioning, repeatable, one per folder**: `cd` into the folder
    you want as a vault, then `memvaultctl create <name> [--port N]`. This is
-   where the skill file gets copied, `.gitignore` gets its entries, the port
-   gets assigned and persisted, and the container/launchd services get
-   started.
+   where a project-level copy of the skill also gets written (Zed's `file://`
+   import and OpenCode's `AGENTS.md` convention need a real file inside the
+   vault directory - they have no per-user skill concept to point at
+   instead), `.gitignore` gets its entries, the port gets assigned and
+   persisted, and the container/launchd services get started. The MCP server
+   itself stays directory-scoped (`claude mcp add-json ... --scope local`,
+   per `INTEGRATIONS.md`) - deliberately not global, so having several
+   vaults doesn't put every vault's write/search tools into every unrelated
+   Claude Code session at once. See `DESIGN.md` for the isolation reasoning
+   behind that choice.
 
 Upgrading the tool itself is `memvaultctl upgrade` (global - pulls the repo,
 rebuilds the image / upgrades the uv tools, does not touch any running
@@ -35,7 +45,7 @@ notes) - no generated per-vault control script.
 ## What's here
 
 - `install.sh` / `install-docker.sh` - system installers, see above.
-- `skills/memnote/SKILL.md` - the note-writing skill, shared verbatim across every
+- `skills/vnote/SKILL.md` - the note-writing skill, shared verbatim across every
   client (Claude Code, Zed, Open WebUI, opencode-as-`AGENTS.md`).
 - `scripts/watch-commit.sh` / `push-timer.sh` - shared by both backends and by
   the Docker entrypoint. One implementation, not duplicated per path.
@@ -48,7 +58,7 @@ notes) - no generated per-vault control script.
 
 ## Rules, not suggestions
 
-- **`skills/memnote/SKILL.md` is AI-facing: terse and directive only.** State the
+- **`skills/vnote/SKILL.md` is AI-facing: terse and directive only.** State the
   rule, not the reason. Explanatory prose belongs in `DESIGN.md` or commit
   messages, not in a file an agent parses as instructions.
 - **Never use bare `mv`/`cp` in scripts - always `-f`.** This repo's own scripts
