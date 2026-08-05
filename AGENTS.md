@@ -45,10 +45,12 @@ notes) - no generated per-vault control script.
 ## What's here
 
 - `install.sh` / `install-docker.sh` - system installers, see above.
-- `uninstall.sh` - removes the whole system-level install (every registered
-  vault, the `memvaultctl` symlink, `~/.memvault`, the per-user skill, any
-  `memvault:*` Docker images). Dry-run by default, `--yes` to execute. Never
-  touches vault directories or their git history - keep it that way.
+- `uninstall.sh` - removes the tool only: `memvaultctl` symlink, repo
+  checkout, backend marker, per-user skill, unused `memvault:*` Docker
+  images. Deliberately never stops or removes a vault's container/services,
+  never touches `~/.memvault/config`/`logs`/`ports.txt`/`vaults.txt`, and
+  never touches vault directories or their git history - keep it that way.
+  Dry-run by default, `--yes` to execute.
 - `skills/vnote/SKILL.md` - the note-writing skill, shared verbatim across every
   client (Claude Code, Zed, Open WebUI, opencode-as-`AGENTS.md`).
 - `scripts/watch-commit.sh` / `push-timer.sh` - shared by both backends and by

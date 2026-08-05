@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# Fully removes memvault from this machine: every registered vault's
-# container/services, the memvaultctl symlink, ~/.memvault (repo checkout,
-# config, logs, port/vault registries), the per-user skill, and any
-# memvault:* Docker images. Never touches vault directories or their git
-# history - same rule as `memvaultctl uninstall <vault>`, applied to all of
-# them at once plus the system-level install.
+# Removes the memvault *tool* from this machine: the memvaultctl symlink,
+# the repo checkout (~/.memvault/repo), the backend marker
+# (~/.memvault/backend), the per-user skill, and any unused memvault:*
+# Docker images. Deliberately does NOT touch any vault - no vault's
+# container or launchd services are stopped or removed, and
+# ~/.memvault/config, ~/.memvault/logs, ports.txt, and vaults.txt (all
+# vault-specific state, including a vault's basic-memory index) are left
+# exactly as they are. Vault directories and their git history are never
+# touched either. To remove one specific vault, use
+# `memvaultctl uninstall <vault>` instead - this script won't do that.
 #
 # Usage:
 #
@@ -20,6 +24,7 @@ set -euo pipefail
 
 INFRA_HOME="$HOME/.memvault"
 INFRA_DIR="$INFRA_HOME/repo"
+BACKEND_FILE="$INFRA_HOME/backend"
 VAULTS_FILE="$INFRA_HOME/vaults.txt"
 SKILL_DIR="$HOME/.claude/skills/vnote"
 
@@ -47,36 +52,34 @@ if command -v docker >/dev/null 2>&1; then
 fi
 
 log "This will remove:"
-if [[ -n "$VAULTS" ]]; then
-  echo "$VAULTS" | sed 's/^/  - vault: /'
-else
-  echo "  (no registered vaults found in $VAULTS_FILE)"
-fi
 if [[ -n "$BINDIR" ]]; then
   echo "  - $BINDIR/memvaultctl"
 else
   echo "  (no memvaultctl symlink found)"
 fi
-echo "  - $INFRA_HOME (repo checkout, config, logs, port/vault registries)"
+echo "  - $INFRA_DIR (repo checkout)"
+echo "  - $BACKEND_FILE"
 echo "  - $SKILL_DIR"
 if [[ -n "$IMAGES" ]]; then
-  echo "$IMAGES" | sed 's/^/  - docker image: /'
+  echo "$IMAGES" | sed 's/^/  - docker image (only if unused by a running vault): /'
 else
   echo "  (no memvault docker images found)"
 fi
+
+log "This will NOT touch:"
+if [[ -n "$VAULTS" ]]; then
+  echo "$VAULTS" | sed 's/^/  - vault (container\/services left running): /'
+else
+  echo "  (no registered vaults found in $VAULTS_FILE)"
+fi
+echo "  - $INFRA_HOME/config, $INFRA_HOME/logs, ports.txt, vaults.txt (vault-specific state)"
+echo "  - vault directories or their git history"
 echo
-echo "Vault directories and their git history are never touched by this."
+echo "To remove a specific vault instead, use: memvaultctl uninstall <vault>"
 
 if [[ "$YES" != "1" ]]; then
-  log "Dry run - nothing removed. Re-run with --yes to actually remove all of the above."
+  log "Dry run - nothing removed. Re-run with --yes to actually remove the tool."
   exit 0
-fi
-
-if [[ -n "$VAULTS" && -f "$INFRA_DIR/scripts/memvaultctl.sh" ]]; then
-  for v in $VAULTS; do
-    log "Uninstalling vault: $v"
-    bash "$INFRA_DIR/scripts/memvaultctl.sh" uninstall "$v" || true
-  done
 fi
 
 if [[ -n "$BINDIR" ]]; then
@@ -85,14 +88,17 @@ if [[ -n "$BINDIR" ]]; then
 fi
 
 if [[ -n "$IMAGES" ]]; then
-  log "Removing memvault Docker images"
+  log "Removing unused memvault Docker images (in-use ones are skipped, not forced)"
   echo "$IMAGES" | xargs -r docker rmi >/dev/null 2>&1 || true
 fi
 
 log "Removing $SKILL_DIR"
 rm -rf "$SKILL_DIR"
 
-log "Removing $INFRA_HOME"
-rm -rf "$INFRA_HOME"
+log "Removing $INFRA_DIR"
+rm -rf "$INFRA_DIR"
 
-log "Done. memvault has been removed from this machine. Vault directories were left untouched."
+log "Removing $BACKEND_FILE"
+rm -f "$BACKEND_FILE"
+
+log "Done. The memvault tool has been removed. Any registered vaults are still running - use memvaultctl uninstall <vault> for those, or reinstall to manage them again."
