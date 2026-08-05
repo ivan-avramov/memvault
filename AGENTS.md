@@ -27,12 +27,15 @@ Installing the tool and provisioning a vault are separate, deliberate steps:
    import and OpenCode's `AGENTS.md` convention need a real file inside the
    vault directory - they have no per-user skill concept to point at
    instead), `.gitignore` gets its entries, the port gets assigned and
-   persisted, and the container/launchd services get started. The MCP server
-   itself stays directory-scoped (`claude mcp add-json ... --scope local`,
-   per `INTEGRATIONS.md`) - deliberately not global, so having several
-   vaults doesn't put every vault's write/search tools into every unrelated
-   Claude Code session at once. See `DESIGN.md` for the isolation reasoning
-   behind that choice.
+   persisted, and the container/launchd services get started. The generated
+   `INTEGRATIONS.md` registers the MCP server with `claude mcp add-json ...
+   --scope user` by default, matching the per-user skill install - ambient
+   capture without cd-ing into the vault directory is the actual point of
+   this tool, so that's the default a single vault should get. Registering a
+   *second* vault this way too puts both vaults' tools in every session at
+   once, which does reintroduce a real cross-vault-mistake risk (see
+   `DESIGN.md`) - `--scope local` is still there as an explicit fallback for
+   whichever vault you don't want ambient.
 
 Upgrading the tool itself is `memvaultctl upgrade` (global - pulls the repo,
 rebuilds the image / upgrades the uv tools, does not touch any running
@@ -79,10 +82,13 @@ notes) - no generated per-vault control script.
   gitconfig mounting) lives in exactly one place, `docker_start_vault` in
   `scripts/memvaultctl.sh`, shared by `create`/`start`/`restart` - don't
   reintroduce a second copy of it.
-- **Claude Code MCP registration is `claude mcp add-json ... --scope local`,
-  never a hand-edited `.mcp.json`.** Project-scoped `.mcp.json` servers need an
+- **Claude Code MCP registration is always `claude mcp add-json ...`, never a
+  hand-edited `.mcp.json`.** Project-scoped `.mcp.json` servers need an
   approval step Claude Code doesn't surface clearly - from inside a session,
-  "unapproved" and "never configured" look identical.
+  "unapproved" and "never configured" look identical. Default `--scope user`
+  for a single vault (ambient, no cd-ing required - that's the actual point);
+  `--scope local` is the documented fallback once a second vault exists and
+  you don't want its tools present in every session.
 - **`mcpo` needs `mcp<2` pinned** (`uv tool install mcpo --with "mcp<2"`) until
   mcpo ships a release compatible with `mcp>=2.0`'s renamed import
   (`streamablehttp_client` -> `streamable_http_client`). Tracked upstream at

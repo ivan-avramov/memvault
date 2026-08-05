@@ -28,8 +28,7 @@ write a per-vault `INTEGRATIONS.md` with copy-pasteable client config.
 Prerequisite: Docker (Desktop or OrbStack) running.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install-docker.sh \
-  | bash
+curl -fsSL https://raw.githubusercontent.com/ivan-avramov/memvault/main/install-docker.sh | bash
 ```
 
 This clones the repo to `~/.memvault/repo`, builds the `memvault:local` image,

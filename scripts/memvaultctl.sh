@@ -282,11 +282,17 @@ mcpo is serving this vault on **http://127.0.0.1:$port**
 \`\`\`
 
 Claude Code: register with
-\`claude mcp add-json $vault '{"command":"docker","args":["exec","-i","$cname","uvx","basic-memory","mcp"],"env":{"BASIC_MEMORY_MCP_PROJECT":"$vault"}}' --scope local\`
+\`claude mcp add-json $vault '{"command":"docker","args":["exec","-i","$cname","uvx","basic-memory","mcp"],"env":{"BASIC_MEMORY_MCP_PROJECT":"$vault"}}' --scope user\`
 (not a hand-edited \`.mcp.json\` - project-scoped servers there need an
-explicit approval step Claude Code doesn't surface clearly). Project-level
-\`.claude/skills/vnote/SKILL.md\` was already installed and loads
-automatically.
+explicit approval step Claude Code doesn't surface clearly). \`--scope user\`
+makes this available in every Claude Code session on the machine, not just
+ones started from inside this vault directory - matches the per-user
+\`vnote\` skill install, which is also always loaded. If you register a
+second vault this way too, both vaults' tools are present in every session
+at once - say which vault you mean in your prompt when it's not obvious, or
+switch this one back to \`--scope local\` if you'd rather it only apply
+inside this directory. Project-level \`.claude/skills/vnote/SKILL.md\` was
+also installed and loads automatically.
 
 ## Zed
 
@@ -349,13 +355,20 @@ mcpo is serving this vault on **http://127.0.0.1:$port**
 Don't hand-edit \`.mcp.json\` - project-scoped servers defined there need an
 explicit approval step (\`⏸ Pending approval\` in \`claude mcp get\`) before
 Claude Code will actually connect, and it's easy to miss that they're sitting
-unapproved rather than connected. Use the CLI instead, which registers under
-\`local\` scope (your personal config, not a committed file - no approval
-prompt):
+unapproved rather than connected. Use the CLI instead:
 
 \`\`\`bash
-claude mcp add-json $vault '{"command": "$uvx_path", "args": ["basic-memory", "mcp"], "env": {"BASIC_MEMORY_CONFIG_DIR": "$config_dir", "BASIC_MEMORY_MCP_PROJECT": "$vault"}}' --scope local
+claude mcp add-json $vault '{"command": "$uvx_path", "args": ["basic-memory", "mcp"], "env": {"BASIC_MEMORY_CONFIG_DIR": "$config_dir", "BASIC_MEMORY_MCP_PROJECT": "$vault"}}' --scope user
 \`\`\`
+
+\`--scope user\` (your personal config, not a committed file - no approval
+prompt) makes this available in every Claude Code session on the machine,
+not just ones started from inside this vault directory - matches the
+per-user \`vnote\` skill install, which is also always loaded. If you
+register a second vault this way too, both vaults' tools are present in
+every session at once - say which vault you mean in your prompt when it's
+not obvious, or switch this one back to \`--scope local\` if you'd rather it
+only apply inside this directory.
 
 Verify with \`claude mcp list\` (should show \`✔ Connected\`, not pending) before
 testing a write. The project-level \`.claude/skills/vnote/SKILL.md\`
